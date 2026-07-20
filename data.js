@@ -172,9 +172,56 @@ const COURSES = [
     desc: "제주공항에서 15분, 여행 일정에 끼워 넣기 가장 좋은 36홀. 바다와 한라산이 동시에 보이는 제주 입문 코스입니다.",
   },
 
+  /* ── v1.3 추가 골프장 (수도권) ── */
+  { id: "namseoul", name: "남서울 CC", eng: "Nam Seoul Country Club", region: "수도권", city: "경기 성남", addr: "경기도 성남시 분당구", lat: 37.36, lng: 127.07, type: "회원제", holes: 18, par: 72, len: "6,510m", rating: 4.6, ratingN: 522, green: { wd: 240000, we: 310000 }, caddy: 170000, cart: 110000, hue: 142, tags: ["전통 명문", "서울 근접"], facilities: ["클럽하우스", "사우나", "레스토랑", "연습그린"], desc: "1968년 개장한 수도권 전통 명문. 서울에서 가깝고 대회 개최 이력이 많은 클래식 코스입니다.", open: 1968 },
+  { id: "anyang", name: "안양 CC", eng: "Anyang Country Club", region: "수도권", city: "경기 군포", addr: "경기도 군포시", lat: 37.327, lng: 126.955, type: "회원제", holes: 18, par: 72, len: "6,321m", rating: 4.8, ratingN: 445, green: { wd: 260000, we: 330000 }, caddy: 180000, cart: 110000, hue: 148, tags: ["국내 최고 명문", "조경 명가"], facilities: ["클럽하우스", "사우나", "파인다이닝", "프로샵"], desc: "국내에서 손꼽히는 명문 회원제. 소나무 조경과 코스 관리 수준이 교과서로 불립니다.", open: 1968 },
+  { id: "hanyang", name: "한양 CC", eng: "Hanyang Country Club", region: "수도권", city: "경기 고양", addr: "경기도 고양시", lat: 37.62, lng: 126.85, type: "회원제", holes: 36, par: 72, len: "6,428m", rating: 4.4, ratingN: 612, green: { wd: 200000, we: 265000 }, caddy: 160000, cart: 100000, hue: 138, tags: ["역사적 코스", "36홀"], facilities: ["클럽하우스", "사우나", "레스토랑"], desc: "1964년 개장, 한국 골프 역사와 함께한 36홀. 서울 서북권 접근성이 뛰어납니다.", open: 1964 },
+  { id: "newkorea", name: "뉴코리아 CC", eng: "New Korea Country Club", region: "수도권", city: "경기 고양", addr: "경기도 고양시", lat: 37.64, lng: 126.8, type: "회원제", holes: 27, par: 72, len: "6,380m", rating: 4.3, ratingN: 388, green: { wd: 190000, we: 255000 }, caddy: 160000, cart: 100000, hue: 133, tags: ["북한산 뷰", "빠른 진행"], facilities: ["클럽하우스", "사우나", "레스토랑"], desc: "북한산 자락의 27홀. 서울 은평권에서 30분대로 닿는 오래된 단골 코스입니다.", open: 1966 },
+  { id: "cc88", name: "88 CC", eng: "88 Country Club", region: "수도권", city: "경기 용인", addr: "경기도 용인시 기흥구", lat: 37.24, lng: 127.15, type: "회원제", holes: 36, par: 72, len: "6,650m", rating: 4.3, ratingN: 704, green: { wd: 195000, we: 260000 }, caddy: 160000, cart: 100000, hue: 144, tags: ["36홀", "88올림픽 유산"], facilities: ["클럽하우스", "사우나", "레스토랑", "연습장"], desc: "서울올림픽을 기념해 만든 36홀 대형 코스. 용인권에서 예약 회전이 빠른 편입니다.", open: 1988 },
+  { id: "giheung", name: "기흥 CC", eng: "Giheung Country Club", region: "수도권", city: "경기 용인", addr: "경기도 용인시 기흥구", lat: 37.24, lng: 127.11, type: "회원제", holes: 18, par: 72, len: "6,240m", rating: 4.2, ratingN: 356, green: { wd: 185000, we: 245000 }, caddy: 160000, cart: 100000, hue: 136, tags: ["기흥호수 뷰", "서울 40분"], facilities: ["클럽하우스", "사우나", "레스토랑"], desc: "기흥호수를 끼고 도는 레이아웃. 수도권 남부 직장인들의 평일 라운드 단골입니다." },
+  { id: "asiana", name: "아시아나 CC", eng: "Asiana Country Club", region: "수도권", city: "경기 용인", addr: "경기도 용인시 처인구", lat: 37.23, lng: 127.24, type: "회원제", holes: 36, par: 72, len: "6,701m", rating: 4.5, ratingN: 498, green: { wd: 210000, we: 275000 }, caddy: 165000, cart: 105000, hue: 146, tags: ["대회 개최", "36홀"], facilities: ["클럽하우스", "사우나", "레스토랑", "프로샵"], desc: "KLPGA 대회가 열리던 용인의 36홀. 동·서 코스 성격이 달라 두 번 가도 새롭습니다." },
+  { id: "hwasan", name: "화산 CC", eng: "Hwasan Country Club", region: "수도권", city: "경기 용인", addr: "경기도 용인시 처인구", lat: 37.2, lng: 127.25, type: "회원제", holes: 27, par: 72, len: "6,520m", rating: 4.5, ratingN: 377, green: { wd: 215000, we: 285000 }, caddy: 165000, cart: 105000, hue: 150, tags: ["코스 관리 명가", "조용한 분위기"], facilities: ["클럽하우스", "사우나", "레스토랑"], desc: "그린 스피드와 관리로 유명한 용인의 27홀. 진지한 골퍼들이 아끼는 코스입니다." },
+  { id: "rexfield", name: "렉스필드 CC", eng: "Rexfield Country Club", region: "수도권", city: "경기 여주", addr: "경기도 여주시", lat: 37.27, lng: 127.55, type: "회원제", holes: 27, par: 72, len: "6,890m", rating: 4.6, ratingN: 341, green: { wd: 235000, we: 305000 }, caddy: 170000, cart: 110000, hue: 152, tags: ["프리미엄", "여주 벨트"], facilities: ["클럽하우스", "사우나", "파인다이닝", "프로샵"], desc: "여주 골프 벨트의 프리미엄 27홀. 페어웨이 폭이 넉넉해 호쾌한 티샷 맛이 좋습니다." },
+  { id: "haesley", name: "해슬리 나인브릿지", eng: "Haesley Nine Bridges", region: "수도권", city: "경기 여주", addr: "경기도 여주시", lat: 37.36, lng: 127.58, type: "회원제", holes: 18, par: 72, len: "6,925m", rating: 4.9, ratingN: 288, green: { wd: 330000, we: 420000 }, caddy: 200000, cart: 120000, hue: 158, tags: ["세계 100대 코스", "건축상 클럽하우스"], facilities: ["클럽하우스", "파인다이닝", "스파", "프로샵"], desc: "세계 100대 코스에 오른 여주의 하이엔드. 목조 클럽하우스는 건축상을 받은 걸작입니다.", open: 2009 },
+  { id: "ferrum", name: "페럼 클럽", eng: "Ferrum Club", region: "수도권", city: "경기 여주", addr: "경기도 여주시", lat: 37.32, lng: 127.62, type: "회원제", holes: 18, par: 72, len: "6,712m", rating: 4.6, ratingN: 267, green: { wd: 225000, we: 295000 }, caddy: 170000, cart: 110000, hue: 141, tags: ["모던 코스", "벙커 전략"], facilities: ["클럽하우스", "사우나", "레스토랑"], desc: "동국제강이 만든 여주의 모던 18홀. 벙커 배치가 전략적이라 코스 매니지먼트 재미가 있습니다." },
+  { id: "solmoro", name: "솔모로 CC", eng: "Solmoro Country Club", region: "수도권", city: "경기 여주", addr: "경기도 여주시", lat: 37.26, lng: 127.6, type: "회원제", holes: 27, par: 72, len: "6,480m", rating: 4.3, ratingN: 402, green: { wd: 180000, we: 240000 }, caddy: 160000, cart: 100000, hue: 134, tags: ["소나무 숲", "가성비 회원제"], facilities: ["클럽하우스", "사우나", "레스토랑"], desc: "이름처럼 소나무 숲 사이를 걷는 27홀. 여주권에서 합리적인 가격대로 인기입니다." },
+  { id: "eastvalley", name: "이스트밸리 CC", eng: "East Valley Country Club", region: "수도권", city: "경기 광주", addr: "경기도 광주시", lat: 37.35, lng: 127.32, type: "회원제", holes: 18, par: 72, len: "6,833m", rating: 4.7, ratingN: 311, green: { wd: 255000, we: 325000 }, caddy: 175000, cart: 110000, hue: 154, tags: ["명문", "토너먼트 세팅"], facilities: ["클럽하우스", "사우나", "파인다이닝"], desc: "경기 광주의 명문 18홀. 챔피언십 세팅과 클럽하우스 서비스로 정평이 나 있습니다." },
+  { id: "namchon", name: "남촌 CC", eng: "Namchon Country Club", region: "수도권", city: "경기 광주", addr: "경기도 광주시", lat: 37.36, lng: 127.28, type: "회원제", holes: 18, par: 72, len: "6,602m", rating: 4.5, ratingN: 289, green: { wd: 230000, we: 300000 }, caddy: 170000, cart: 110000, hue: 147, tags: ["프라이빗", "그린 난도"], facilities: ["클럽하우스", "사우나", "레스토랑"], desc: "프라이빗한 분위기의 광주 18홀. 언듈레이션 강한 그린이 스코어를 가릅니다." },
+  { id: "seowonvalley", name: "서원밸리 CC", eng: "Seowon Valley Country Club", region: "수도권", city: "경기 파주", addr: "경기도 파주시", lat: 37.8, lng: 126.85, type: "회원제", holes: 27, par: 72, len: "6,590m", rating: 4.5, ratingN: 356, green: { wd: 210000, we: 275000 }, caddy: 165000, cart: 105000, hue: 139, tags: ["자선 대회", "파주 대표"], facilities: ["클럽하우스", "사우나", "레스토랑", "연습장"], desc: "그린콘서트로 유명한 파주의 27홀. 코스와 문화 행사가 함께하는 특별한 클럽입니다." },
+  { id: "lakewood", name: "레이크우드 CC", eng: "Lakewood Country Club", region: "수도권", city: "경기 양주", addr: "경기도 양주시", lat: 37.8, lng: 127.02, type: "회원제", holes: 27, par: 72, len: "6,510m", rating: 4.3, ratingN: 334, green: { wd: 190000, we: 250000 }, caddy: 160000, cart: 100000, hue: 137, tags: ["호수 코스", "서울 북부"], facilities: ["클럽하우스", "사우나", "레스토랑"], desc: "이름 그대로 호수를 낀 27홀. 서울 북부에서 접근이 편해 주중 수요가 꾸준합니다." },
+  { id: "jisan", name: "지산 CC", eng: "Jisan Country Club", region: "수도권", city: "경기 이천", addr: "경기도 이천시", lat: 37.21, lng: 127.39, type: "회원제", holes: 27, par: 72, len: "6,431m", rating: 4.1, ratingN: 468, green: { wd: 165000, we: 225000 }, caddy: 155000, cart: 100000, hue: 131, tags: ["리조트 병설", "스키장"], facilities: ["리조트", "클럽하우스", "레스토랑"], desc: "지산리조트와 붙어 있는 27홀. 겨울 스키, 여름 골프로 사계절 도는 코스입니다." },
+
+  /* ── v1.3 추가 골프장 (강원·충청) ── */
+  { id: "high1", name: "하이원 CC", eng: "High1 Country Club", region: "강원", city: "강원 정선", addr: "강원특별자치도 정선군", lat: 37.2, lng: 128.83, type: "퍼블릭", holes: 18, par: 72, len: "6,701m", rating: 4.4, ratingN: 512, green: { wd: 140000, we: 195000 }, caddy: 150000, cart: 100000, hue: 156, tags: ["해발 1,100m", "여름 시원", "리조트"], facilities: ["리조트", "카지노", "레스토랑", "프로샵"], desc: "해발 1,100m 고원의 퍼블릭 18홀. 한여름에도 서늘해 피서 라운드의 성지로 불립니다." },
+  { id: "sagewood", name: "세이지우드 홍천", eng: "Sagewood Hongcheon", region: "강원", city: "강원 홍천", addr: "강원특별자치도 홍천군", lat: 37.62, lng: 127.95, type: "회원제", holes: 27, par: 72, len: "6,820m", rating: 4.6, ratingN: 298, green: { wd: 200000, we: 265000 }, caddy: 165000, cart: 105000, hue: 149, tags: ["산악 프리미엄", "리조트"], facilities: ["리조트", "클럽하우스", "사우나", "레스토랑"], desc: "홍천 산자락의 프리미엄 27홀. 홀마다 고저차가 커 전략과 전망을 동시에 줍니다." },
+  { id: "laviebelle", name: "라비에벨 CC", eng: "La Vie est Belle", region: "강원", city: "강원 춘천", addr: "강원특별자치도 춘천시", lat: 37.77, lng: 127.65, type: "퍼블릭", holes: 36, par: 72, len: "6,750m", rating: 4.5, ratingN: 421, green: { wd: 175000, we: 235000 }, caddy: 160000, cart: 100000, hue: 153, tags: ["올드·듄스 코스", "36홀"], facilities: ["클럽하우스", "골프텔", "레스토랑"], desc: "춘천의 대형 36홀. 링크스풍 듄스 코스와 클래식한 올드 코스를 골라 칠 수 있습니다." },
+  { id: "jadepalace", name: "제이드팰리스 GC", eng: "Jade Palace Golf Club", region: "강원", city: "강원 춘천", addr: "강원특별자치도 춘천시", lat: 37.8, lng: 127.55, type: "회원제", holes: 18, par: 72, len: "6,867m", rating: 4.8, ratingN: 233, green: { wd: 280000, we: 350000 }, caddy: 180000, cart: 115000, hue: 159, tags: ["하이엔드", "잭 니클라우스 시그니처"], facilities: ["클럽하우스", "파인다이닝", "사우나", "프로샵"], desc: "잭 니클라우스가 설계한 춘천의 하이엔드 18홀. 페어웨이 컨디션이 늘 대회 수준입니다." },
+  { id: "woojeong", name: "우정힐스 CC", eng: "Woo Jeong Hills", region: "충청", city: "충남 천안", addr: "충청남도 천안시", lat: 36.75, lng: 127.25, type: "회원제", holes: 27, par: 72, len: "6,920m", rating: 4.7, ratingN: 356, green: { wd: 240000, we: 310000 }, caddy: 175000, cart: 110000, hue: 151, tags: ["한국오픈 개최", "챔피언십"], facilities: ["클럽하우스", "사우나", "레스토랑", "연습장"], desc: "한국오픈이 열리는 천안의 챔피언십 코스. 러프를 기르면 프로도 고전하는 세팅입니다." },
+  { id: "tgv", name: "떼제베 CC", eng: "TGV Country Club", region: "충청", city: "충북 청주", addr: "충청북도 청주시", lat: 36.72, lng: 127.43, type: "퍼블릭", holes: 27, par: 72, len: "6,540m", rating: 4.2, ratingN: 445, green: { wd: 140000, we: 190000 }, caddy: 150000, cart: 95000, hue: 129, tags: ["가성비", "오송역 인근"], facilities: ["클럽하우스", "레스토랑", "프로샵"], desc: "KTX 오송역에서 가까운 27홀. 수도권에서 기차 타고 오는 뚜벅이 라운드도 가능합니다." },
+
+  /* ── v1.3 추가 골프장 (호남·영남) ── */
+  { id: "gunsan", name: "군산 CC", eng: "Gunsan Country Club", region: "호남", city: "전북 군산", addr: "전북특별자치도 군산시", lat: 35.9, lng: 126.78, type: "퍼블릭", holes: 81, par: 72, len: "7,020m", rating: 4.3, ratingN: 688, green: { wd: 120000, we: 170000 }, caddy: 145000, cart: 95000, hue: 127, tags: ["국내 최대 81홀", "노캐디 선택", "골프텔"], facilities: ["골프텔", "클럽하우스", "레스토랑", "연습장"], desc: "단일 골프장 국내 최대 81홀. 새벽부터 밤까지 티타임이 많아 당일 빈자리가 자주 나옵니다." },
+  { id: "seungju", name: "승주 CC", eng: "Seungju Country Club", region: "호남", city: "전남 순천", addr: "전라남도 순천시", lat: 34.95, lng: 127.35, type: "회원제", holes: 27, par: 72, len: "6,610m", rating: 4.4, ratingN: 302, green: { wd: 160000, we: 215000 }, caddy: 155000, cart: 100000, hue: 143, tags: ["남도 명문", "순천만 인근"], facilities: ["클럽하우스", "사우나", "레스토랑"], desc: "순천의 남도 명문 27홀. 온화한 기후 덕에 겨울 원정 라운드로 사랑받습니다." },
+  { id: "tongdo", name: "통도 파인이스트", eng: "Tongdo Pine East", region: "영남", city: "경남 양산", addr: "경상남도 양산시", lat: 35.48, lng: 129.07, type: "회원제", holes: 27, par: 72, len: "6,690m", rating: 4.4, ratingN: 377, green: { wd: 180000, we: 240000 }, caddy: 160000, cart: 100000, hue: 140, tags: ["영축산 자락", "부산 30분"], facilities: ["클럽하우스", "사우나", "레스토랑"], desc: "영축산 자락의 27홀. 부산과 울산 어디서든 30분대라 영남권 조율이 쉽습니다." },
+  { id: "gaya", name: "가야 CC", eng: "Gaya Country Club", region: "영남", city: "경남 김해", addr: "경상남도 김해시", lat: 35.32, lng: 128.83, type: "회원제", holes: 36, par: 72, len: "6,570m", rating: 4.3, ratingN: 456, green: { wd: 175000, we: 235000 }, caddy: 158000, cart: 100000, hue: 135, tags: ["36홀", "김해공항 20분"], facilities: ["클럽하우스", "사우나", "레스토랑", "연습장"], desc: "김해의 대형 36홀. 공항이 가까워 출장길에 골프백 들고 오는 골퍼가 많습니다." },
+  { id: "silla", name: "경주 신라 CC", eng: "Gyeongju Silla Country Club", region: "영남", city: "경북 경주", addr: "경상북도 경주시", lat: 35.78, lng: 129.33, type: "회원제", holes: 27, par: 72, len: "6,480m", rating: 4.2, ratingN: 366, green: { wd: 165000, we: 220000 }, caddy: 155000, cart: 100000, hue: 132, tags: ["보문단지", "관광 연계"], facilities: ["클럽하우스", "사우나", "레스토랑"], desc: "보문관광단지의 27홀. 경주 여행과 라운드를 함께 묶기 좋은 위치입니다." },
+  { id: "maunaocean", name: "마우나오션 CC", eng: "Mauna Ocean", region: "영남", city: "경북 경주", addr: "경상북도 경주시", lat: 35.7, lng: 129.34, type: "퍼블릭", holes: 18, par: 72, len: "6,420m", rating: 4.1, ratingN: 401, green: { wd: 130000, we: 180000 }, caddy: 150000, cart: 95000, hue: 128, tags: ["동해 조망", "리조트"], facilities: ["리조트", "클럽하우스", "레스토랑"], desc: "산 위에서 동해가 보이는 리조트형 18홀. 실속 요금으로 경주권 입문 코스 역할을 합니다." },
+  { id: "dianus", name: "블루원 디아너스", eng: "Bluone The Honors", region: "영남", city: "경북 경주", addr: "경상북도 경주시", lat: 35.75, lng: 129.3, type: "회원제", holes: 18, par: 72, len: "6,894m", rating: 4.6, ratingN: 244, green: { wd: 220000, we: 290000 }, caddy: 170000, cart: 110000, hue: 155, tags: ["토너먼트 코스", "프리미엄"], facilities: ["클럽하우스", "사우나", "파인다이닝"], desc: "대회 세팅으로 유명한 경주의 프리미엄 18홀. 그린 주변 숏게임 난도가 백미입니다." },
+  { id: "oceanhills", name: "오션힐스 포항", eng: "Ocean Hills Pohang", region: "영남", city: "경북 포항", addr: "경상북도 포항시", lat: 36.05, lng: 129.32, type: "회원제", holes: 27, par: 72, len: "6,530m", rating: 4.3, ratingN: 312, green: { wd: 170000, we: 225000 }, caddy: 155000, cart: 100000, hue: 145, tags: ["바다 조망", "포항 대표"], facilities: ["클럽하우스", "사우나", "레스토랑"], desc: "포항 바닷바람과 함께 치는 27홀. 동해안 드라이브 코스와 묶기 좋습니다." },
+  { id: "palgong", name: "팔공 CC", eng: "Palgong Country Club", region: "영남", city: "대구 동구", addr: "대구광역시 동구", lat: 36.02, lng: 128.7, type: "회원제", holes: 27, par: 72, len: "6,490m", rating: 4.2, ratingN: 389, green: { wd: 165000, we: 220000 }, caddy: 155000, cart: 100000, hue: 130, tags: ["팔공산 자락", "대구 근교"], facilities: ["클럽하우스", "사우나", "레스토랑"], desc: "팔공산 자락의 27홀. 대구 도심에서 40분, 대구·경북 골퍼들의 홈코스 격입니다." },
+
+  /* ── v1.3 추가 골프장 (제주) ── */
+  { id: "ninebridges", name: "클럽 나인브릿지", eng: "The Club at Nine Bridges", region: "제주", city: "제주 안덕", addr: "제주특별자치도 서귀포시 안덕면", lat: 33.32, lng: 126.42, type: "회원제", holes: 18, par: 72, len: "6,913m", rating: 4.9, ratingN: 356, green: { wd: 340000, we: 430000 }, caddy: 200000, cart: 120000, hue: 160, tags: ["세계 100대 코스", "PGA 개최"], facilities: ["클럽하우스", "파인다이닝", "스파", "프로샵"], desc: "PGA 투어가 열린 한국 대표 코스. 세계 100대 코스 단골이자 제주 골프의 정점입니다.", open: 2001 },
+  { id: "skyhill", name: "롯데 스카이힐 제주", eng: "Lotte Skyhill Jeju", region: "제주", city: "제주 서귀포", addr: "제주특별자치도 서귀포시", lat: 33.32, lng: 126.51, type: "퍼블릭", holes: 27, par: 72, len: "6,602m", rating: 4.4, ratingN: 489, green: { wd: 155000, we: 210000 }, caddy: 155000, cart: 100000, hue: 137, tags: ["한라산 뷰", "대중제"], facilities: ["클럽하우스", "레스토랑", "프로샵"], desc: "한라산 남쪽 자락의 대중제 27홀. 제주 리조트 골프의 스테디셀러입니다." },
+  { id: "teddyvalley", name: "테디밸리 GC", eng: "Teddy Valley Golf Club", region: "제주", city: "제주 안덕", addr: "제주특별자치도 서귀포시 안덕면", lat: 33.29, lng: 126.35, type: "퍼블릭", holes: 18, par: 72, len: "6,320m", rating: 4.2, ratingN: 366, green: { wd: 145000, we: 195000 }, caddy: 150000, cart: 95000, hue: 126, tags: ["테디베어 테마", "가족 여행"], facilities: ["클럽하우스", "테마 뮤지엄", "레스토랑"], desc: "테디베어 테마의 유쾌한 18홀. 산방산 전망과 부담 없는 요금으로 여행 라운드에 좋습니다." },
+  { id: "laon", name: "라온 GC", eng: "Laon Golf Club", region: "제주", city: "제주 한림", addr: "제주특별자치도 제주시 한림읍", lat: 33.35, lng: 126.28, type: "퍼블릭", holes: 27, par: 72, len: "6,650m", rating: 4.3, ratingN: 412, green: { wd: 150000, we: 200000 }, caddy: 155000, cart: 100000, hue: 134, tags: ["비양도 뷰", "27홀"], facilities: ["골프텔", "클럽하우스", "레스토랑"], desc: "제주 서쪽 한림의 27홀. 비양도가 보이는 홀과 골프텔 패키지로 원정족에게 인기입니다." },
+  { id: "blackstone", name: "블랙스톤 제주", eng: "Blackstone Jeju", region: "제주", city: "제주 한림", addr: "제주특별자치도 제주시 한림읍", lat: 33.36, lng: 126.31, type: "회원제", holes: 27, par: 72, len: "6,825m", rating: 4.6, ratingN: 298, green: { wd: 210000, we: 275000 }, caddy: 170000, cart: 110000, hue: 157, tags: ["곶자왈 코스", "명문"], facilities: ["클럽하우스", "사우나", "파인다이닝"], desc: "곶자왈 원시림 사이를 지나는 27홀. 제주 특유의 지형을 가장 잘 살린 코스로 꼽힙니다." },
+  { id: "elysian", name: "엘리시안 제주", eng: "Elysian Jeju", region: "제주", city: "제주 조천", addr: "제주특별자치도 제주시 조천읍", lat: 33.45, lng: 126.65, type: "퍼블릭", holes: 18, par: 72, len: "6,380m", rating: 4.1, ratingN: 334, green: { wd: 140000, we: 185000 }, caddy: 150000, cart: 95000, hue: 125, tags: ["공항 30분", "실속"], facilities: ["클럽하우스", "레스토랑"], desc: "조천의 실속형 18홀. 공항에서 30분이라 도착 당일 오후 라운드로 딱입니다." },
+  { id: "haevichi", name: "해비치 CC", eng: "Haevichi Country Club", region: "제주", city: "제주 표선", addr: "제주특별자치도 서귀포시 표선면", lat: 33.36, lng: 126.8, type: "회원제", holes: 27, par: 72, len: "6,590m", rating: 4.5, ratingN: 356, green: { wd: 190000, we: 250000 }, caddy: 165000, cart: 105000, hue: 149, tags: ["해비치 호텔", "동부 대표"], facilities: ["호텔", "클럽하우스", "사우나", "레스토랑"], desc: "해비치 호텔&리조트와 이어지는 27홀. 제주 동부 여행의 골프 거점입니다." },
+
   /* ── 스크린골프 매장 (kind: screen) ── */
   {
-    id: "sc-gangnam", kind: "screen", name: "골프존파크 강남역점", eng: "Golfzon Park Gangnam", region: "수도권", city: "서울 강남",
+    id: "sc-gangnam", kind: "screen", district: "gangnam", name: "골프존파크 강남역점", eng: "Golfzon Park Gangnam", region: "수도권", city: "서울 강남",
     addr: "서울특별시 강남구 강남대로 인근", lat: 37.4979, lng: 127.0276,
     type: "스크린", brand: "골프존 투비전 플러스", brandShort: "골프존", rooms: 12, hoursOpen: "24시간",
     rating: 4.5, ratingN: 412, room: { day: 25000, night: 33000 }, game: 25000, practice: 15000,
@@ -184,7 +231,7 @@ const COURSES = [
     desc: "강남역 도보 3분, 24시간 운영하는 골프존파크. 투비전 플러스 12개 룸에 좌타석 전용 룸과 회식용 파티룸까지 갖춰 퇴근 후 게임 수요가 가장 많은 지점입니다.",
   },
   {
-    id: "sc-hongdae", kind: "screen", name: "프렌즈 스크린 홍대점", eng: "Friends Screen Hongdae", region: "수도권", city: "서울 마포",
+    id: "sc-hongdae", kind: "screen", district: "hongdae", name: "프렌즈 스크린 홍대점", eng: "Friends Screen Hongdae", region: "수도권", city: "서울 마포",
     addr: "서울특별시 마포구 양화로 인근", lat: 37.5573, lng: 126.9237,
     type: "스크린", brand: "카카오VX 프렌즈 스크린", brandShort: "카카오VX", rooms: 9, hoursOpen: "24시간",
     rating: 4.4, ratingN: 288, room: { day: 22000, night: 30000 }, game: 22000, practice: 13000,
@@ -194,7 +241,7 @@ const COURSES = [
     desc: "홍대입구역 인근의 카카오VX 프렌즈 스크린. 캐주얼한 분위기라 머리 올리기 전 연습 게임과 심야 라운드로 인기가 많습니다.",
   },
   {
-    id: "sc-pangyo", kind: "screen", name: "골프존파크 판교점", eng: "Golfzon Park Pangyo", region: "수도권", city: "경기 성남",
+    id: "sc-pangyo", kind: "screen", district: "pangyo", name: "골프존파크 판교점", eng: "Golfzon Park Pangyo", region: "수도권", city: "경기 성남",
     addr: "경기도 성남시 분당구 판교역로 인근", lat: 37.3947, lng: 127.1112,
     type: "스크린", brand: "골프존 투비전 플러스", brandShort: "골프존", rooms: 10, hoursOpen: "06:00 ~ 24:00",
     rating: 4.6, ratingN: 357, room: { day: 24000, night: 32000 }, game: 24000, practice: 14000,
@@ -204,7 +251,7 @@ const COURSES = [
     desc: "판교 테크노밸리 직장인들의 퇴근 후 성지. 스킨스 내기 게임 모집이 활발하고 GDR 연습룸도 함께 운영합니다.",
   },
   {
-    id: "sc-seomyeon", kind: "screen", name: "골프존파크 서면점", eng: "Golfzon Park Seomyeon", region: "영남", city: "부산 부산진",
+    id: "sc-seomyeon", kind: "screen", district: "seomyeon", name: "골프존파크 서면점", eng: "Golfzon Park Seomyeon", region: "영남", city: "부산 부산진",
     addr: "부산광역시 부산진구 중앙대로 인근", lat: 35.1578, lng: 129.0604,
     type: "스크린", brand: "골프존 투비전 플러스", brandShort: "골프존", rooms: 11, hoursOpen: "24시간",
     rating: 4.3, ratingN: 301, room: { day: 22000, night: 30000 }, game: 22000, practice: 13000,
@@ -214,7 +261,7 @@ const COURSES = [
     desc: "서면 한복판의 24시간 골프존파크. 부산 나이트골프 크루의 우천 시 대체 라운드 장소로도 자주 쓰입니다.",
   },
   {
-    id: "sc-dunsan", kind: "screen", name: "프렌즈 스크린 둔산점", eng: "Friends Screen Dunsan", region: "충청", city: "대전 서구",
+    id: "sc-dunsan", kind: "screen", district: "dunsan", name: "프렌즈 스크린 둔산점", eng: "Friends Screen Dunsan", region: "충청", city: "대전 서구",
     addr: "대전광역시 서구 둔산로 인근", lat: 36.3512, lng: 127.378,
     type: "스크린", brand: "카카오VX 프렌즈 스크린", brandShort: "카카오VX", rooms: 8, hoursOpen: "09:00 ~ 24:00",
     rating: 4.2, ratingN: 188, room: { day: 20000, night: 27000 }, game: 20000, practice: 12000,
@@ -224,7 +271,7 @@ const COURSES = [
     desc: "대전 둔산동의 프렌즈 스크린. 합리적인 룸비로 충청권 평일 저녁 게임 모임이 꾸준한 지점입니다.",
   },
   {
-    id: "sc-jeju", kind: "screen", name: "골프존파크 제주연동점", eng: "Golfzon Park Jeju Yeondong", region: "제주", city: "제주시",
+    id: "sc-jeju", kind: "screen", district: "jeju", name: "골프존파크 제주연동점", eng: "Golfzon Park Jeju Yeondong", region: "제주", city: "제주시",
     addr: "제주특별자치도 제주시 연동", lat: 33.489, lng: 126.4983,
     type: "스크린", brand: "골프존 투비전 플러스", brandShort: "골프존", rooms: 7, hoursOpen: "10:00 ~ 02:00",
     rating: 4.3, ratingN: 144, room: { day: 20000, night: 27000 }, game: 20000, practice: 12000,
@@ -232,6 +279,76 @@ const COURSES = [
     tags: ["우천 대체", "여행객 환영", "신제주"],
     facilities: ["투비전 룸", "라운지", "주차"],
     desc: "신제주 연동의 골프존파크. 비 오는 날 필드 대신, 혹은 늦은 밤 한 게임 더 치고 싶은 여행객들이 즐겨 찾습니다.",
+  },
+  /* 강남·역삼 추가 */
+  { id: "sc-yeoksam", kind: "screen", district: "gangnam", name: "프렌즈 스크린 역삼점", eng: "Friends Screen Yeoksam", region: "수도권", city: "서울 강남", addr: "서울특별시 강남구 역삼동", lat: 37.5006, lng: 127.0364, type: "스크린", brand: "카카오VX 프렌즈 스크린", brandShort: "카카오VX", rooms: 8, hoursOpen: "24시간", rating: 4.4, ratingN: 356, room: { day: 24000, night: 32000 }, game: 24000, practice: 14000, hue: 192, tags: ["역삼역 도보 2분", "24시간"], facilities: ["프렌즈 룸", "라운지", "무인 시스템"], desc: "역삼역 바로 옆 프렌즈 스크린. 강남 직장인 퇴근 게임의 단골 코스입니다." },
+  { id: "sc-seolleung", kind: "screen", district: "gangnam", name: "티업비전 선릉점", eng: "TeeUp Vision Seolleung", region: "수도권", city: "서울 강남", addr: "서울특별시 강남구 삼성동", lat: 37.5045, lng: 127.049, type: "스크린", brand: "SG골프 티업비전", brandShort: "SG골프", rooms: 7, hoursOpen: "10:00 ~ 02:00", rating: 4.3, ratingN: 244, room: { day: 22000, night: 30000 }, game: 22000, practice: 13000, hue: 188, tags: ["선릉역", "가성비"], facilities: ["티업비전 룸", "라운지", "주차"], desc: "선릉역 인근의 SG골프 티업비전 매장. 실측 데이터 기반 시뮬레이터로 연습파에게 인기입니다." },
+  { id: "sc-gangnam2", kind: "screen", district: "gangnam", name: "골프존파크 강남 2호점", eng: "Golfzon Park Gangnam 2", region: "수도권", city: "서울 강남", addr: "서울특별시 강남구 서초동 인근", lat: 37.4948, lng: 127.0233, type: "스크린", brand: "골프존 투비전 플러스", brandShort: "골프존", rooms: 9, hoursOpen: "24시간", rating: 4.4, ratingN: 288, room: { day: 24000, night: 32000 }, game: 24000, practice: 14000, hue: 197, tags: ["강남역 남쪽", "심야"], facilities: ["투비전 플러스 룸", "라운지", "무인 시스템"], desc: "강남역 남쪽 블록의 24시간 골프존파크. 1호점이 만석일 때의 든든한 대안입니다." },
+  { id: "sc-nonhyeon", kind: "screen", district: "gangnam", name: "프렌즈 스크린 신논현점", eng: "Friends Screen Sinnonhyeon", region: "수도권", city: "서울 강남", addr: "서울특별시 강남구 논현동", lat: 37.5047, lng: 127.0246, type: "스크린", brand: "카카오VX 프렌즈 스크린", brandShort: "카카오VX", rooms: 6, hoursOpen: "11:00 ~ 02:00", rating: 4.2, ratingN: 201, room: { day: 23000, night: 31000 }, game: 23000, practice: 13000, hue: 190, tags: ["신논현역", "감성 인테리어"], facilities: ["프렌즈 룸", "음료 바"], desc: "신논현역 골목의 아늑한 프렌즈 스크린. 소규모 모임 게임에 어울리는 분위기입니다." },
+  /* 홍대·합정 추가 */
+  { id: "sc-hapjeong", kind: "screen", district: "hongdae", name: "골프존파크 합정점", eng: "Golfzon Park Hapjeong", region: "수도권", city: "서울 마포", addr: "서울특별시 마포구 합정동", lat: 37.5497, lng: 126.9139, type: "스크린", brand: "골프존 투비전 플러스", brandShort: "골프존", rooms: 8, hoursOpen: "24시간", rating: 4.3, ratingN: 267, room: { day: 22000, night: 29000 }, game: 22000, practice: 13000, hue: 193, tags: ["합정역", "24시간"], facilities: ["투비전 룸", "라운지", "주차"], desc: "합정역 인근 24시간 골프존파크. 홍대 심야 게임 수요를 나눠 받는 지점입니다." },
+  { id: "sc-sinchon", kind: "screen", district: "hongdae", name: "티업비전 신촌점", eng: "TeeUp Vision Sinchon", region: "수도권", city: "서울 서대문", addr: "서울특별시 서대문구 창천동", lat: 37.5556, lng: 126.9369, type: "스크린", brand: "SG골프 티업비전", brandShort: "SG골프", rooms: 6, hoursOpen: "10:00 ~ 24:00", rating: 4.1, ratingN: 188, room: { day: 20000, night: 27000 }, game: 20000, practice: 12000, hue: 186, tags: ["신촌", "대학가 가성비"], facilities: ["티업비전 룸", "라운지"], desc: "신촌 대학가의 실속 티업비전. 골프 입문한 20대 모임이 많은 매장입니다." },
+  { id: "sc-seogyo", kind: "screen", district: "hongdae", name: "프렌즈 스크린 서교점", eng: "Friends Screen Seogyo", region: "수도권", city: "서울 마포", addr: "서울특별시 마포구 서교동", lat: 37.5525, lng: 126.9186, type: "스크린", brand: "카카오VX 프렌즈 스크린", brandShort: "카카오VX", rooms: 7, hoursOpen: "12:00 ~ 02:00", rating: 4.3, ratingN: 214, room: { day: 21000, night: 28000 }, game: 21000, practice: 12000, hue: 191, tags: ["홍대 중심", "심야"], facilities: ["프렌즈 룸", "음료 바"], desc: "홍대 놀이터 근처의 프렌즈 스크린. 약속 전후로 한 게임 끼워 넣기 좋습니다." },
+  /* 판교·분당 추가 */
+  { id: "sc-pangyo2", kind: "screen", district: "pangyo", name: "프렌즈 스크린 판교테크노점", eng: "Friends Screen Pangyo Techno", region: "수도권", city: "경기 성남", addr: "경기도 성남시 분당구 삼평동", lat: 37.4021, lng: 127.1086, type: "스크린", brand: "카카오VX 프렌즈 스크린", brandShort: "카카오VX", rooms: 9, hoursOpen: "07:00 ~ 24:00", rating: 4.5, ratingN: 312, room: { day: 23000, night: 31000 }, game: 23000, practice: 13000, hue: 194, tags: ["테크노밸리", "아침 게임"], facilities: ["프렌즈 룸", "라운지", "주차"], desc: "판교테크노밸리 한복판. 출근 전 아침 게임 예약이 있는 보기 드문 매장입니다." },
+  { id: "sc-jeongja", kind: "screen", district: "pangyo", name: "골프존파크 정자점", eng: "Golfzon Park Jeongja", region: "수도권", city: "경기 성남", addr: "경기도 성남시 분당구 정자동", lat: 37.367, lng: 127.108, type: "스크린", brand: "골프존 투비전 플러스", brandShort: "골프존", rooms: 8, hoursOpen: "24시간", rating: 4.4, ratingN: 256, room: { day: 22000, night: 30000 }, game: 22000, practice: 13000, hue: 196, tags: ["정자 카페거리", "24시간"], facilities: ["투비전 플러스 룸", "라운지", "주차"], desc: "정자 카페거리 인근의 24시간 골프존파크. 분당 남부의 밤 게임 거점입니다." },
+  { id: "sc-seohyeon", kind: "screen", district: "pangyo", name: "티업비전 서현점", eng: "TeeUp Vision Seohyeon", region: "수도권", city: "경기 성남", addr: "경기도 성남시 분당구 서현동", lat: 37.385, lng: 127.123, type: "스크린", brand: "SG골프 티업비전", brandShort: "SG골프", rooms: 6, hoursOpen: "10:00 ~ 01:00", rating: 4.2, ratingN: 178, room: { day: 21000, night: 28000 }, game: 21000, practice: 12000, hue: 187, tags: ["서현역", "가성비"], facilities: ["티업비전 룸", "라운지"], desc: "서현역 상권의 실속 매장. 분당 토박이들이 조용히 아끼는 연습 겸 게임 장소입니다." },
+  /* 부산 서면 추가 */
+  { id: "sc-seomyeon2", kind: "screen", district: "seomyeon", name: "프렌즈 스크린 서면점", eng: "Friends Screen Seomyeon", region: "영남", city: "부산 부산진", addr: "부산광역시 부산진구 부전동", lat: 35.1602, lng: 129.0596, type: "스크린", brand: "카카오VX 프렌즈 스크린", brandShort: "카카오VX", rooms: 8, hoursOpen: "24시간", rating: 4.3, ratingN: 234, room: { day: 21000, night: 28000 }, game: 21000, practice: 12000, hue: 189, tags: ["서면역", "24시간"], facilities: ["프렌즈 룸", "라운지", "음료 바"], desc: "서면역 바로 위 프렌즈 스크린. 부산 심야 게임의 양대 산맥 중 하나입니다." },
+  { id: "sc-jeonpo", kind: "screen", district: "seomyeon", name: "티업비전 전포점", eng: "TeeUp Vision Jeonpo", region: "영남", city: "부산 부산진", addr: "부산광역시 부산진구 전포동", lat: 35.153, lng: 129.064, type: "스크린", brand: "SG골프 티업비전", brandShort: "SG골프", rooms: 6, hoursOpen: "11:00 ~ 02:00", rating: 4.1, ratingN: 156, room: { day: 19000, night: 26000 }, game: 19000, practice: 11000, hue: 185, tags: ["전포 카페거리", "가성비"], facilities: ["티업비전 룸", "라운지"], desc: "전포 카페거리 골목의 실속 매장. 커피 마시고 한 게임, 부산식 코스입니다." },
+  { id: "sc-bujeon", kind: "screen", district: "seomyeon", name: "골프존파크 부전점", eng: "Golfzon Park Bujeon", region: "영남", city: "부산 부산진", addr: "부산광역시 부산진구 부전동", lat: 35.1637, lng: 129.0611, type: "스크린", brand: "골프존 투비전 플러스", brandShort: "골프존", rooms: 10, hoursOpen: "24시간", rating: 4.4, ratingN: 278, room: { day: 22000, night: 30000 }, game: 22000, practice: 13000, hue: 195, tags: ["부전역", "대형 매장"], facilities: ["투비전 플러스 룸", "GDR 연습룸", "주차"], desc: "부전역 인근의 대형 골프존파크. 룸이 많아 주말 저녁에도 자리가 비교적 잘 잡힙니다." },
+  /* 대전 둔산 추가 */
+  { id: "sc-dunsan2", kind: "screen", district: "dunsan", name: "골프존파크 둔산점", eng: "Golfzon Park Dunsan", region: "충청", city: "대전 서구", addr: "대전광역시 서구 둔산동", lat: 36.354, lng: 127.3843, type: "스크린", brand: "골프존 투비전 플러스", brandShort: "골프존", rooms: 9, hoursOpen: "24시간", rating: 4.3, ratingN: 234, room: { day: 21000, night: 28000 }, game: 21000, practice: 12000, hue: 199, tags: ["시청 인근", "24시간"], facilities: ["투비전 플러스 룸", "라운지", "주차"], desc: "대전시청 인근의 24시간 골프존파크. 충청권 공무원과 직장인 게임의 중심지입니다." },
+  { id: "sc-tanbang", kind: "screen", district: "dunsan", name: "티업비전 탄방점", eng: "TeeUp Vision Tanbang", region: "충청", city: "대전 서구", addr: "대전광역시 서구 탄방동", lat: 36.3489, lng: 127.369, type: "스크린", brand: "SG골프 티업비전", brandShort: "SG골프", rooms: 5, hoursOpen: "10:00 ~ 24:00", rating: 4.0, ratingN: 122, room: { day: 18000, night: 25000 }, game: 18000, practice: 11000, hue: 184, tags: ["탄방동", "가성비"], facilities: ["티업비전 룸", "라운지"], desc: "탄방동 주택가의 동네 실속 매장. 저렴한 룸비로 연습 게임에 부담이 없습니다." },
+  /* 제주 연동 추가 */
+  { id: "sc-nohyeong", kind: "screen", district: "jeju", name: "프렌즈 스크린 노형점", eng: "Friends Screen Nohyeong", region: "제주", city: "제주시", addr: "제주특별자치도 제주시 노형동", lat: 33.4837, lng: 126.48, type: "스크린", brand: "카카오VX 프렌즈 스크린", brandShort: "카카오VX", rooms: 6, hoursOpen: "10:00 ~ 01:00", rating: 4.2, ratingN: 134, room: { day: 19000, night: 26000 }, game: 19000, practice: 11000, hue: 183, tags: ["노형동", "여행객 환영"], facilities: ["프렌즈 룸", "라운지", "주차"], desc: "노형동 중심가의 프렌즈 스크린. 흐린 날 필드 대신 찾는 여행객이 많습니다." },
+  { id: "sc-yeondong2", kind: "screen", district: "jeju", name: "티업비전 연동점", eng: "TeeUp Vision Yeondong", region: "제주", city: "제주시", addr: "제주특별자치도 제주시 연동", lat: 33.4906, lng: 126.501, type: "스크린", brand: "SG골프 티업비전", brandShort: "SG골프", rooms: 5, hoursOpen: "11:00 ~ 24:00", rating: 4.0, ratingN: 98, room: { day: 18000, night: 24000 }, game: 18000, practice: 10000, hue: 182, tags: ["연동 상권", "가성비"], facilities: ["티업비전 룸", "라운지"], desc: "연동 상권의 실속 티업비전. 제주 시내 숙소에서 걸어갈 수 있는 거리입니다." },
+];
+
+/* ── 동네 지도 (김캐디식 시세 지도) 지역 설정 ── */
+const DISTRICTS = [
+  { id: "gangnam", name: "강남 · 역삼", lat: 37.4995, lng: 127.031, sub: "서울 강남구" },
+  { id: "hongdae", name: "홍대 · 합정", lat: 37.5535, lng: 126.9235, sub: "서울 마포구" },
+  { id: "pangyo", name: "판교 · 분당", lat: 37.389, lng: 127.112, sub: "경기 성남시" },
+  { id: "seomyeon", name: "부산 서면", lat: 35.158, lng: 129.061, sub: "부산 부산진구" },
+  { id: "dunsan", name: "대전 둔산", lat: 36.3515, lng: 127.378, sub: "대전 서구" },
+  { id: "jeju", name: "제주 연동", lat: 33.4875, lng: 126.492, sub: "제주시" },
+];
+const BRAND_PIN = {
+  "골프존": { bg: "#FF4438", fg: "#FFFFFF", ch: "G" },
+  "카카오VX": { bg: "#FDD835", fg: "#1A1A1A", ch: "F" },
+  "SG골프": { bg: "#1A1A1A", fg: "#FFFFFF", ch: "T" },
+};
+
+/* ── 골프연습장 구독 나눠쓰기 ── */
+const SUBS = [
+  {
+    id: "sub1", venue: "GDR 아카데미 역삼점", city: "서울 강남", district: "gangnam", hostId: "h7",
+    pass: "월 12회 타석권", days: "화 · 목", time: "06:00 ~ 08:00", remain: 6,
+    normal: 15000, price: 8000, until: "8월 31일까지", verified: true,
+    tags: ["실내", "GDR 시뮬레이터", "새벽 타석"],
+    memo: "출장이 잦아져서 화, 목 새벽 타석을 못 쓰게 됐어요. 회원권 규정상 동반 등록으로 함께 이용 가능합니다.",
+  },
+  {
+    id: "sub2", venue: "홍대 인도어 골프연습장", city: "서울 마포", district: "hongdae", hostId: "h6",
+    pass: "주말 자유이용권", days: "토 · 일", time: "10:00 ~ 12:00", remain: 4,
+    normal: 12000, price: 7000, until: "9월 중순까지", verified: false,
+    tags: ["인도어", "주말", "초보 환영"],
+    memo: "주말 아침에 못 가는 날이 많아요. 같이 연습하면서 스윙 봐주실 분이면 더 좋아요!",
+  },
+  {
+    id: "sub3", venue: "판교 스카이 인도어", city: "경기 성남", district: "pangyo", hostId: "h5",
+    pass: "GDR 플러스 무제한권", days: "월 · 수 · 금", time: "20:00 ~ 22:00", remain: 8,
+    normal: 18000, price: 10000, until: "10월 말까지", verified: true,
+    tags: ["실내", "GDR 플러스", "퇴근 후"],
+    memo: "무제한권인데 주 3회밖에 못 갑니다. 규정상 동반 1인 무료 입장이 가능해서 나눠 씁니다.",
+  },
+  {
+    id: "sub4", venue: "서면 드라이빙레인지", city: "부산 부산진", district: "seomyeon", hostId: "h3",
+    pass: "평일 저녁 타석권", days: "평일", time: "19:00 ~ 21:00", remain: 5,
+    normal: 13000, price: 7500, until: "8월 말까지", verified: true,
+    tags: ["실외 타석", "야간 조명", "2층 타석"],
+    memo: "야간 라운드 시즌이라 연습장 갈 시간이 없네요. 실외 2층 타석, 조명 좋습니다.",
   },
 ];
 
@@ -542,6 +659,8 @@ const BANKS = ["KB국민", "신한", "우리", "하나", "NH농협", "IBK기업"
 const FAQS = [
   { q: "왜 이렇게 저렴한가요?", a: "골프장은 4인 예약이 원칙이라 한 명이 빠지면 남은 일행이 위약금이나 미달 그린피를 떠안습니다. 호스트는 그 손해 대신 빈자리를 할인가로 양도하는 것이라 서로에게 이득입니다." },
   { q: "스크린골프도 참여할 수 있나요?", a: "네! 스크린골프는 룸 단위로 결제하기 때문에 한 명이 빠지면 남은 사람들의 1인 부담이 확 올라갑니다. 빈자리를 채우면 룸비가 다시 1/N이 되니 필드보다도 할인 폭이 큰 경우가 많아요. 홈과 지도에서 스크린 필터로 모아볼 수 있습니다." },
+  { q: "동네 시세 지도는 뭔가요?", a: "우리 동네 스크린골프 매장의 시간당 룸 가격을 실제 거리 지도 위에서 한눈에 비교하는 기능이에요. 날짜와 시간을 바꾸면 주간, 야간, 주말 요금이 바로 반영되고, 지금 빈자리 모집이 열린 매장에는 즉시확정 배지가 붙습니다." },
+  { q: "연습장 구독 나눠쓰기는 어떻게 이용하나요?", a: "타석 회원권이나 연습장 구독을 다 못 쓰는 회원이 남는 요일과 시간대를 회당 가격으로 나눠 쓰는 기능이에요. 연습장 회원권 규정상 동반 이용이 가능한 매장만 등록되며, 정산은 현장결제 또는 계좌이체로 진행됩니다." },
   { q: "결제는 어떻게 하나요?", a: "현장결제 또는 계좌이체 중 선택할 수 있어요. 계좌이체를 선택하면 호스트 확정 후 채팅으로 정산 계좌가 안내됩니다. 그린피는 골프장에서 각자 결제하고, 캐디피와 카트비는 1/N 정산합니다." },
   { q: "혼자 가도 어색하지 않을까요?", a: "참여 전에 호스트와 동반자의 그린지수, 구력, 평균 타수, 후기를 모두 확인할 수 있어요. 채팅으로 미리 인사를 나누는 분들이 많습니다." },
   { q: "취소하면 위약금이 있나요?", a: "티오프 24시간 전까지는 무료 취소입니다. 이후 취소는 참여가의 50%가 위약금으로 부과되고, 노쇼는 그린지수가 크게 깎이며 3회 누적 시 이용이 제한됩니다." },
@@ -551,7 +670,8 @@ const FAQS = [
 
 /* 공지사항 */
 const NOTICES = [
-  { title: "라스트티 v1.2: 스크린골프 오픈", body: "골프존파크와 프렌즈 스크린 매장의 빈자리 참여가 열렸습니다. 룸비 1/N 정산으로 필드보다 큰 할인 폭을 만나보세요.", when: "오늘" },
+  { title: "라스트티 v1.3: 동네 시세 지도 · 연습장 구독 나눠쓰기", body: "동네 스크린골프 매장의 시간대별 룸 가격을 거리 지도에서 비교하고, 남는 연습장 회원권을 회당 가격으로 나눠 쓰는 기능이 열렸습니다. 골프장도 48곳으로 늘었어요.", when: "오늘" },
+  { title: "라스트티 v1.2: 스크린골프 오픈", body: "골프존파크와 프렌즈 스크린 매장의 빈자리 참여가 열렸습니다. 룸비 1/N 정산으로 필드보다 큰 할인 폭을 만나보세요.", when: "어제" },
   { title: "라스트티 v1.1 업데이트 안내", body: "실제 골프장 위성 전경, 상세 지도, 메시지 기능, 계좌이체 결제 수단이 추가됐습니다.", when: "어제" },
   { title: "여름 시즌 새벽 티오프 모집 증가", body: "무더위로 새벽 및 야간 라운드 모집이 크게 늘고 있어요. 알림을 켜두면 마감 임박 자리를 놓치지 않아요.", when: "3일 전" },
 ];

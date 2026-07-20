@@ -8,7 +8,7 @@ const appEl = $("#app");
 const won = n => "₩" + Math.round(n).toLocaleString("ko-KR");
 const BOOT = new Date();
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-const VERSION = "1.2.0";
+const VERSION = "1.3.0";
 
 const courseById = id => COURSES.find(c => c.id === id);
 const hostById = id => HOSTS.find(h => h.id === id);
@@ -31,7 +31,7 @@ const Store = {
   key: "lt_store_v1",
   data: {
     user: null, seenOb: false, joined: [], myPosts: [], crews: [], likes: [], crewFeed: {}, closed: [],
-    chats: {}, readAt: {}, pay: null, payPref: "onsite",
+    chats: {}, readAt: {}, pay: null, payPref: "onsite", subJoined: [],
     set: { dark: false, nJoin: true, nHot: true, nCrew: true, nMkt: false },
   },
   load() {
@@ -530,17 +530,33 @@ function renderHome() {
       <em>●</em>12분 전 박*진님이 그린지수 5.0 후기를 받았어요
     </div></div>
 
+    <div class="px" style="margin-top:16px">
+      <button class="nb-banner in" onclick="location.hash='#/nearby'">
+        <span class="nb-banner-ic"><i class="ph-fill ph-map-pin-area"></i></span>
+        <span style="flex:1;text-align:left"><b style="display:block;font-size:14.5px;font-weight:800">동네 스크린 시세 지도</b>
+        <span style="font-size:12px;color:var(--ink-3);font-weight:600">강남 · 홍대 · 판교 · 서면 · 둔산 · 제주, 시간대별 룸 가격 비교</span></span>
+        <i class="ph-bold ph-caret-right" style="color:var(--ink-3)"></i>
+      </button>
+    </div>
+
     <div class="h-sec px"><h2>지금 참여할 수 있는 라운드</h2><span class="more" onclick="location.hash='#/map'">지도로 보기</span></div>
     <div class="chips" id="home-kind" style="padding-bottom:2px">
-      ${["전체", "필드", "스크린"].map(k => `<button class="chip kind ${homeState.kind === k ? "on" : ""}" data-k="${k}">${k === "필드" ? '<i class="ph-fill ph-golf"></i> ' : k === "스크린" ? '<i class="ph-fill ph-monitor-play"></i> ' : ""}${k}</button>`).join("")}
+      ${["전체", "필드", "스크린", "연습장"].map(k => `<button class="chip kind ${homeState.kind === k ? "on" : ""}" data-k="${k}">${k === "필드" ? '<i class="ph-fill ph-golf"></i> ' : k === "스크린" ? '<i class="ph-fill ph-monitor-play"></i> ' : k === "연습장" ? '<i class="ph-fill ph-barbell"></i> ' : ""}${k}</button>`).join("")}
     </div>
+    ${homeState.kind !== "연습장" ? `
     <div class="chips" id="home-chips">
       ${REGIONS.map(r => `<button class="chip ${homeState.region === r ? "on" : ""}" data-r="${r}">${r}</button>`).join("")}
       <button class="chip" id="home-sort" style="margin-left:auto">${homeState.sort} <i class="ph-bold ph-caret-down"></i></button>
-    </div>
+    </div>` : ""}
     <div class="px" id="home-list">
-      ${filtered.map(postCard).join("") || `<div class="empty"><div class="big"><i class="ph ph-golf"></i></div><b>이 지역엔 아직 모집이 없어요</b><p>다른 지역을 보거나, 직접 모집을 올려보세요.</p></div>`}
+      ${homeState.kind === "연습장"
+        ? SUBS.map(subCard).join("")
+        : filtered.map(postCard).join("") || `<div class="empty"><div class="big"><i class="ph ph-golf"></i></div><b>이 지역엔 아직 모집이 없어요</b><p>다른 지역을 보거나, 직접 모집을 올려보세요.</p></div>`}
     </div>
+
+    ${homeState.kind === "전체" ? `
+    <div class="h-sec px"><h2>연습장 구독 나눠쓰기</h2><span class="more" id="home-more-subs">전체 보기</span></div>
+    <div class="px">${SUBS.slice(0, 2).map(s => `<div class="rv">${subCard(s)}</div>`).join("")}</div>` : ""}
 
     <div class="px rv" style="margin-top:28px">
       <div class="info-card">
@@ -572,7 +588,8 @@ function renderHome() {
   stagger();
   bindRv();
 
-  $("#home-chips").addEventListener("click", e => {
+  const hc = $("#home-chips");
+  if (hc) hc.addEventListener("click", e => {
     const b = e.target.closest(".chip"); if (!b) return;
     if (b.id === "home-sort") {
       const order = ["임박순", "할인순", "낮은가격순"];
@@ -585,6 +602,8 @@ function renderHome() {
     homeState.kind = b.dataset.k;
     renderHome();
   });
+  const ms = $("#home-more-subs");
+  if (ms) ms.addEventListener("click", () => { homeState.kind = "연습장"; renderHome(); window.scrollTo(0, 620); });
 }
 
 /* ── 지도 뷰 ───────────────────────────── */
@@ -598,6 +617,7 @@ function renderMap() {
     </div>
     <div class="chips" id="map-kind" style="padding-bottom:10px">
       ${["전체", "필드", "스크린"].map(k => `<button class="chip ${mapState.kind === k ? "on" : ""}" data-k="${k}">${k === "필드" ? '<i class="ph-fill ph-golf"></i> ' : k === "스크린" ? '<i class="ph-fill ph-monitor-play"></i> ' : ""}${k}</button>`).join("")}
+      <button class="chip" style="margin-left:auto;background:var(--green);border-color:var(--green);color:var(--lime)" onclick="location.hash='#/nearby'"><i class="ph-fill ph-map-pin-area"></i> 동네 시세</button>
     </div>
     <div class="px in">${koreaMap(true, mapState.kind)}</div>
     <div class="px" style="margin-top:14px">
@@ -945,7 +965,14 @@ function renderCourse(id) {
 function renderNew() {
   if (!S.user) { toast("모집을 올리려면 프로필이 필요해요", "user-circle-plus"); location.hash = "#/signup"; return; }
   const st = { kind: "field", courseId: COURSES[0].id, day: 0, tee: "07:30", holes: 18, hours: 2, slots: 1, normal: 280000, price: 170000, tags: [], level: "누구나", memo: "", pay: "onsite" };
-  const venueOpts = kind => COURSES.filter(c => kind === "screen" ? isScreen(c) : !isScreen(c)).map(c => `<option value="${c.id}">${c.name} (${c.city})</option>`).join("");
+  const venueOpts = kind => {
+    const list = COURSES.filter(c => kind === "screen" ? isScreen(c) : !isScreen(c));
+    return REGIONS.slice(1).map(r => {
+      const rs = list.filter(c => c.region === r);
+      if (!rs.length) return "";
+      return `<optgroup label="${r}">${rs.map(c => `<option value="${c.id}">${c.name} (${c.city})</option>`).join("")}</optgroup>`;
+    }).join("");
+  };
   appEl.innerHTML = `
   <div class="view form-page" style="padding-bottom:120px">
     <div style="display:flex;align-items:center;gap:12px">
@@ -964,8 +991,8 @@ function renderNew() {
     <div class="f-input"><i class="ph ph-golf" style="color:var(--ink-3)"></i>
       <select id="np-course">${venueOpts("field")}</select></div>
 
-    <label class="f-label">날짜</label>
-    <div class="seg" id="np-day">${[0, 1, 2, 3, 4].map(d => { const dt = new Date(BOOT.getFullYear(), BOOT.getMonth(), BOOT.getDate() + d); const nm = d === 0 ? "오늘" : d === 1 ? "내일" : `${dt.getMonth() + 1}.${dt.getDate()}`; return `<button class="${d === 0 ? "on" : ""}" data-v="${d}">${nm}<br><span style="font-size:10.5px;opacity:.7">${DOW[dt.getDay()]}요일</span></button>`; }).join("")}</div>
+    <label class="f-label">날짜 <span id="np-date-sel" style="font-weight:700;color:var(--green-2);margin-left:6px">오늘</span></label>
+    <div class="cal" id="np-cal"></div>
 
     <label class="f-label">시작 시간 · 홀</label>
     <div style="display:flex;gap:8px">
@@ -1023,7 +1050,47 @@ function renderNew() {
       } else hint.classList.add("hidden");
     }
   });
-  seg("#np-day", "day", true); seg("#np-holes", "holes", true); seg("#np-hours", "hours", true); seg("#np-slots", "slots", true); seg("#np-level", "level"); seg("#np-pay", "pay");
+  seg("#np-holes", "holes", true); seg("#np-hours", "hours", true); seg("#np-slots", "slots", true); seg("#np-level", "level"); seg("#np-pay", "pay");
+
+  /* 캘린더 (오늘부터 60일) */
+  const today0 = new Date(BOOT.getFullYear(), BOOT.getMonth(), BOOT.getDate());
+  const MAX_DAY = 60;
+  let calView = new Date(BOOT.getFullYear(), BOOT.getMonth(), 1);
+  const drawCal = () => {
+    const y = calView.getFullYear(), m = calView.getMonth();
+    const first = new Date(y, m, 1);
+    const dim = new Date(y, m + 1, 0).getDate();
+    const thisMonth = new Date(BOOT.getFullYear(), BOOT.getMonth(), 1);
+    const lastMonth = new Date(today0.getTime() + MAX_DAY * 864e5);
+    const canPrev = calView > thisMonth;
+    const canNext = new Date(y, m + 1, 1) <= new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1);
+    let cells = "";
+    for (let i = 0; i < first.getDay(); i++) cells += "<span></span>";
+    for (let d = 1; d <= dim; d++) {
+      const dt = new Date(y, m, d);
+      const off = Math.round((dt - today0) / 864e5);
+      const ok = off >= 0 && off <= MAX_DAY;
+      const dow = dt.getDay();
+      cells += `<button data-off="${off}" ${ok ? "" : "disabled"} class="${off === st.day ? "sel" : ""} ${dow === 0 ? "sun" : dow === 6 ? "cs-sat" : ""} ${off === 0 ? "today" : ""}">${d}</button>`;
+    }
+    $("#np-cal").innerHTML = `
+      <div class="cal-head">
+        <button id="cal-prev" ${canPrev ? "" : "disabled"}><i class="ph-bold ph-caret-left"></i></button>
+        <b>${y}년 ${m + 1}월</b>
+        <button id="cal-next" ${canNext ? "" : "disabled"}><i class="ph-bold ph-caret-right"></i></button>
+      </div>
+      <div class="cal-dow">${DOW.map((d, i) => `<span class="${i === 0 ? "sun" : i === 6 ? "cs-sat" : ""}">${d}</span>`).join("")}</div>
+      <div class="cal-grid">${cells}</div>`;
+    $("#cal-prev").addEventListener("click", () => { calView = new Date(y, m - 1, 1); drawCal(); });
+    $("#cal-next").addEventListener("click", () => { calView = new Date(y, m + 1, 1); drawCal(); });
+    $$("#np-cal .cal-grid button:not([disabled])").forEach(b => b.addEventListener("click", () => {
+      st.day = +b.dataset.off;
+      const dt = new Date(today0.getTime() + st.day * 864e5);
+      $("#np-date-sel").textContent = st.day === 0 ? "오늘" : st.day === 1 ? "내일" : `${dt.getMonth() + 1}월 ${dt.getDate()}일 (${DOW[dt.getDay()]}) · ${st.day}일 후`;
+      drawCal();
+    }));
+  };
+  drawCal();
   $("#np-kind").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
     $$("#np-kind button").forEach(x => x.classList.remove("on")); b.classList.add("on");
@@ -1308,6 +1375,10 @@ function renderMe() {
     <div class="h-sec px"><h2>내가 올린 모집</h2></div>
     <div class="px">${myPosts.map(postCard).join("")}</div>` : ""}
 
+    ${S.subJoined.length ? `
+    <div class="h-sec px"><h2>이용 중인 연습장 구독</h2></div>
+    <div class="px">${S.subJoined.map(id => SUBS.find(s => s.id === id)).filter(Boolean).map(subCard).join("")}</div>` : ""}
+
     <div class="h-sec px"><h2>받은 후기</h2></div>
     <div class="px"><div class="d-card in" style="margin:0">
       <div class="empty" style="padding:16px"><b>첫 라운드 후 후기가 쌓여요</b><p>라운드가 끝나면 동반자들이 서로 그린지수와<br>후기를 남겨 신뢰를 쌓아갑니다.</p></div>
@@ -1576,6 +1647,206 @@ window.resetAll = () => {
     </div>`);
 };
 
+/* ── 동네 시세 지도 (김캐디식 거리 지도 + 가격 핀) ── */
+let nearbyState = { district: "gangnam", dayOff: 0, hour: 19, z: null };
+function nearbyPrice(c, dayOff, hour) {
+  const d = new Date(BOOT.getFullYear(), BOOT.getMonth(), BOOT.getDate() + dayOff);
+  const wk = d.getDay() === 0 || d.getDay() === 6;
+  const base = hour >= 18 || hour < 6 ? c.room.night : c.room.day;
+  return base + (wk ? 3000 : 0);
+}
+function manFmt(n) {
+  const m = n / 10000;
+  return (m % 1 === 0 ? m.toFixed(0) : m.toFixed(1)) + "만";
+}
+function renderNearby() {
+  const D = DISTRICTS.find(d => d.id === nearbyState.district);
+  const vs = COURSES.filter(c => isScreen(c) && c.district === nearbyState.district);
+  const days = [0, 1, 2, 3, 4].map(off => {
+    const d = new Date(BOOT.getFullYear(), BOOT.getMonth(), BOOT.getDate() + off);
+    return { off, label: `${DOW[d.getDay()]}(${d.getDate()})`, wk: d.getDay() === 0 || d.getDay() === 6 };
+  });
+  const hours = [15, 17, 19, 21, 23];
+  appEl.innerHTML = `
+  <div class="view" style="padding-bottom:40px">
+    <div class="page-head">
+      <button class="back" onclick="history.back()"><i class="ph-bold ph-arrow-left"></i></button>
+      <h1>동네 시세 지도</h1>
+      <span style="margin-left:auto" class="tag blue"><i class="ph-fill ph-monitor-play"></i>스크린</span>
+    </div>
+    <div class="chips" id="nb-district">
+      ${DISTRICTS.map(d => `<button class="chip ${nearbyState.district === d.id ? "on" : ""}" data-d="${d.id}">${d.name}</button>`).join("")}
+    </div>
+    <div class="px"><div class="nb-bar in">
+      <div class="nb-bar-row"><span class="nb-bar-label">날짜</span>
+        ${days.map(d => `<button class="nb-opt ${nearbyState.dayOff === d.off ? "on" : ""} ${d.wk ? "wk" : ""}" data-day="${d.off}">${d.label}</button>`).join("")}
+      </div>
+      <div class="nb-bar-row"><span class="nb-bar-label">시간</span>
+        ${hours.map(h => `<button class="nb-opt ${nearbyState.hour === h ? "on" : ""}" data-hour="${h}">${String(h).padStart(2, "0")}:00</button>`).join("")}
+      </div>
+    </div></div>
+    <div class="px" style="margin-top:12px">
+      <div class="nb-map-wrap in">
+        <div id="nb-map"></div>
+        <div class="nb-zoom">
+          <button onclick="nbZoom(1)"><i class="ph-bold ph-plus"></i></button>
+          <button onclick="nbZoom(-1)"><i class="ph-bold ph-minus"></i></button>
+        </div>
+      </div>
+      <p style="margin-top:9px;font-size:11.5px;color:var(--ink-3);font-weight:600">${D.sub} 기준 · 룸 1시간 가격이에요. 핀을 누르면 매장과 모집을 볼 수 있어요.</p>
+    </div>
+    <div class="h-sec px"><h2>이 동네 매장 ${vs.length}곳</h2><span class="more">가격 낮은 순</span></div>
+    <div class="px">
+      ${vs.slice().sort((a, b) => nearbyPrice(a, nearbyState.dayOff, nearbyState.hour) - nearbyPrice(b, nearbyState.dayOff, nearbyState.hour)).map(c => {
+        const open = postsForCourse(c.id);
+        const bp = BRAND_PIN[c.brandShort] || BRAND_PIN["골프존"];
+        return `<div class="map-sheet-card in" onclick="location.hash='#/course/${c.id}'">
+          <div class="sat" style="width:56px;height:56px;border-radius:16px;flex:none">${satShot(c, 17)}</div>
+          <div style="flex:1;min-width:0">
+            <b style="font-size:14.5px">${c.name}</b>
+            <div style="font-size:11.5px;color:var(--ink-3);font-weight:600;margin-top:3px">${c.addr.replace(/서울특별시 |부산광역시 |대전광역시 |경기도 |제주특별자치도 /, "")} · ${c.rating}점</div>
+            <div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap">
+              <span class="tag" style="font-size:10.5px"><span style="width:14px;height:14px;border-radius:4px;background:${bp.bg};color:${bp.fg};font-weight:900;font-size:9.5px;display:inline-flex;align-items:center;justify-content:center">${bp.ch}</span>${c.brandShort}</span>
+              ${open.length ? '<span class="tag green" style="font-size:10.5px"><i class="ph-fill ph-lightning"></i>즉시확정 모집</span>' : ""}
+              ${c.partner ? '<span class="tag lime" style="font-size:10.5px">할인이용권</span>' : ""}
+            </div>
+          </div>
+          <div style="text-align:right;flex:none"><b style="font-size:16.5px;font-weight:900">${manFmt(nearbyPrice(c, nearbyState.dayOff, nearbyState.hour))}</b>
+          <div style="font-size:10.5px;color:var(--ink-3);font-weight:700">시간당</div></div>
+        </div>`;
+      }).join("")}
+    </div>
+  </div>`;
+  stagger();
+  mountNearbyMap();
+  $("#nb-district").addEventListener("click", e => {
+    const b = e.target.closest(".chip"); if (!b) return;
+    nearbyState.district = b.dataset.d;
+    nearbyState.z = null;
+    renderNearby();
+  });
+  $$(".nb-opt").forEach(b => b.addEventListener("click", () => {
+    if (b.dataset.day !== undefined) nearbyState.dayOff = +b.dataset.day;
+    if (b.dataset.hour !== undefined) nearbyState.hour = +b.dataset.hour;
+    renderNearby();
+  }));
+}
+function mountNearbyMap() {
+  const box = $("#nb-map");
+  if (!box) return;
+  const D = DISTRICTS.find(d => d.id === nearbyState.district);
+  const w = box.clientWidth, h = box.clientHeight;
+  const dvs = COURSES.filter(c => isScreen(c) && c.district === nearbyState.district);
+  // 지역 매장 전체가 들어오도록 중심과 줌 자동 맞춤
+  const lats = dvs.map(c => c.lat), lngs = dvs.map(c => c.lng);
+  const clat = dvs.length ? (Math.max(...lats) + Math.min(...lats)) / 2 : D.lat;
+  const clng = dvs.length ? (Math.max(...lngs) + Math.min(...lngs)) / 2 : D.lng;
+  if (!nearbyState.z) {
+    let zf = 17;
+    for (; zf > 13; zf--) {
+      const [x1, y1] = tileXY(Math.max(...lats), Math.min(...lngs), zf);
+      const [x2, y2] = tileXY(Math.min(...lats), Math.max(...lngs), zf);
+      if (Math.abs(x2 - x1) * 256 < w - 110 && Math.abs(y2 - y1) * 256 < h - 150) break;
+    }
+    nearbyState.z = zf;
+  }
+  const z = nearbyState.z;
+  const [xf, yf] = tileXY(clat, clng, z);
+  const cx = xf * 256, cy = yf * 256;
+  let html = "";
+  const tx0 = Math.floor((cx - w / 2) / 256), tx1 = Math.floor((cx + w / 2) / 256);
+  const ty0 = Math.floor((cy - h / 2) / 256), ty1 = Math.floor((cy + h / 2) / 256);
+  for (let tx = tx0; tx <= tx1; tx++) for (let ty = ty0; ty <= ty1; ty++) {
+    const left = tx * 256 - (cx - w / 2), top = ty * 256 - (cy - h / 2);
+    const sub = "abcd"[Math.abs(tx + ty) % 4];
+    html += `<img class="nb-tile" style="left:${left}px;top:${top}px" src="https://${sub}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${tx}/${ty}@2x.png" alt="">`;
+  }
+  dvs.forEach((c, i) => {
+    const [vx, vy] = tileXY(c.lat, c.lng, z);
+    const px = vx * 256 - (cx - w / 2), py = vy * 256 - (cy - h / 2);
+    if (px < -20 || px > w + 20 || py < -20 || py > h + 20) return;
+    const bp = BRAND_PIN[c.brandShort] || BRAND_PIN["골프존"];
+    const inst = postsForCourse(c.id).some(p => p.instant);
+    html += `<button class="nb-pin in" style="left:${px}px;top:${py}px;animation-delay:${i * 70}ms" onclick="pinSheet('${c.id}')">
+      ${inst ? '<span class="nb-inst"><i class="ph-fill ph-lightning"></i>즉시확정</span>' : ""}
+      <span class="nb-price"><span class="nb-brand" style="background:${bp.bg};color:${bp.fg}">${bp.ch}</span>${manFmt(nearbyPrice(c, nearbyState.dayOff, nearbyState.hour))}</span>
+    </button>`;
+  });
+  html += `<div class="nb-attr">지도 © OpenStreetMap · CARTO</div>`;
+  box.innerHTML = html;
+}
+window.nbZoom = d => {
+  nearbyState.z = Math.max(14, Math.min(17, nearbyState.z + d));
+  mountNearbyMap();
+};
+
+/* ── 연습장 구독 나눠쓰기 ── */
+function subCard(s) {
+  const h = hostById(s.hostId);
+  const off = Math.round((1 - s.price / s.normal) * 100);
+  return `
+  <div class="post-card in" onclick="subSheet('${s.id}')">
+    <div class="pc-main">
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px">
+        <span class="tag" style="background:#EDE4FB;color:#6B3FC9"><i class="ph-fill ph-barbell"></i>연습장 구독</span>
+        ${s.verified ? '<span class="tag green"><i class="ph-fill ph-seal-check"></i>회원권 인증</span>' : ""}
+      </div>
+      <div class="pc-title">${s.venue}</div>
+      <div class="pc-meta">${s.days} ${s.time} · ${s.pass} · ${s.city}</div>
+      <div class="pc-row">
+        <div class="pc-price"><del>${won(s.normal)}</del><b>${won(s.price)}<small>/회</small></b></div>
+        <span class="pc-need">${s.remain}회 남음</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:7px;margin-top:10px">
+        ${avat(h)}
+        <span style="font-size:12px;font-weight:700;color:var(--ink-2)">${h.name} · 그린지수 ${h.temp.toFixed(1)}</span>
+        <span class="tag red" style="margin-left:auto">${off}% 할인</span>
+      </div>
+    </div>
+  </div>`;
+}
+window.subSheet = id => {
+  const s = SUBS.find(x => x.id === id);
+  if (!s) return;
+  const h = hostById(s.hostId);
+  const joined = S.subJoined.includes(id);
+  openSheet(`
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+      <span class="tag" style="background:#EDE4FB;color:#6B3FC9"><i class="ph-fill ph-barbell"></i>연습장 구독 나눠쓰기</span>
+      ${s.verified ? '<span class="tag green"><i class="ph-fill ph-seal-check"></i>회원권 인증</span>' : ""}
+    </div>
+    <div style="font-size:19px;font-weight:900">${s.venue}</div>
+    <div style="font-size:13px;color:var(--ink-2);font-weight:600;margin-top:5px"><i class="ph-fill ph-map-pin" style="color:var(--green-2)"></i> ${s.city} · ${s.until}</div>
+    <div class="fee-row" style="margin-top:12px"><span>이용 가능 시간</span><b>${s.days} ${s.time}</b></div>
+    <div class="fee-row"><span>구독권</span><b>${s.pass}</b></div>
+    <div class="fee-row"><span>정상 회당 가격</span><b><del style="color:var(--ink-3);font-weight:600">${won(s.normal)}</del></b></div>
+    <div class="fee-row"><span>남은 회차</span><b>${s.remain}회</b></div>
+    <div class="fee-row total"><span>나눠쓰기 가격</span><b>${won(s.price)} /회</b></div>
+    <div style="display:flex;align-items:center;gap:9px;margin-top:14px;background:var(--bg);border-radius:14px;padding:12px">
+      ${avat(h)}
+      <div><b style="font-size:13.5px">${h.name}</b><div style="font-size:11.5px;color:var(--ink-3);font-weight:600">그린지수 ${h.temp.toFixed(1)} · ${h.career}</div></div>
+      <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="closeSheet();openChat('${h.id}')"><i class="ph-fill ph-chat-circle-dots"></i>메시지</button>
+    </div>
+    <p style="margin-top:12px;font-size:13px;line-height:1.6;color:var(--ink-2);font-weight:500">"${s.memo}"</p>
+    <div style="margin-top:12px;background:var(--bg);border-radius:14px;padding:12px;font-size:12px;color:var(--ink-2);font-weight:600;line-height:1.6">
+      연습장 회원권 규정상 동반 이용이 가능한 매장만 등록돼요. 정산은 현장결제 또는 계좌이체로 진행됩니다.
+    </div>
+    <button class="btn btn-primary" style="margin-top:16px" onclick="joinSub('${s.id}')" ${joined ? "disabled" : ""}>${joined ? "이용 중이에요" : won(s.price) + "에 나눠쓰기 시작"}</button>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="closeSheet()">닫기</button>
+  `);
+};
+window.joinSub = id => {
+  if (!S.user) { closeSheet(); toast("이용하려면 프로필이 필요해요", "user-circle-plus"); location.hash = "#/signup"; return; }
+  const s = SUBS.find(x => x.id === id);
+  if (!S.subJoined.includes(id)) S.subJoined.push(id);
+  Store.save();
+  closeSheet();
+  if (!S.chats[s.hostId]) S.chats[s.hostId] = [];
+  scheduleReply(s.hostId, `${s.venue} 나눠쓰기 신청 확인했어요! 첫 이용 날짜 알려주시면 동반 등록해둘게요. 정산은 회당 ${won(s.price)}입니다.`);
+  toast("나눠쓰기 시작! 호스트가 채팅으로 안내해드려요");
+  render();
+};
+
 /* ══════════ 라우터 ══════════ */
 function render() {
   const hash = location.hash || "#/home";
@@ -1584,7 +1855,7 @@ function render() {
   closeSheet();
 
   const tabbar = $("#tabbar");
-  const hideTab = ["ob", "signup", "post", "course", "user", "new", "chat", "pay", "settings"].includes(route);
+  const hideTab = ["ob", "signup", "post", "course", "user", "new", "chat", "pay", "settings", "nearby"].includes(route);
   tabbar.classList.toggle("hidden", hideTab);
   $$("#tabbar .tab").forEach(t => t.classList.toggle("active", t.dataset.route === "#/" + route));
   const meDot = $("#tab-me-dot");
@@ -1604,6 +1875,7 @@ function render() {
     case "chat": param ? renderThread(param) : renderChatList(); break;
     case "pay": renderPay(); break;
     case "settings": renderSettings(); break;
+    case "nearby": renderNearby(); break;
     default: renderHome();
   }
 }
