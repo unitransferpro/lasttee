@@ -8,9 +8,26 @@ const appEl = $("#app");
 const won = n => "₩" + Math.round(n).toLocaleString("ko-KR");
 const BOOT = new Date();
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-const VERSION = "1.3.0";
+const VERSION = "1.4.0";
 
-const courseById = id => COURSES.find(c => c.id === id);
+/* 전국 디렉토리(venues.js) 항목 → 코스 객체 (dv{index} id) */
+const DIRV = typeof DIR_VENUES !== "undefined" ? DIR_VENUES : [];
+const dirCourse = i => {
+  const v = DIRV[i];
+  if (!v) return null;
+  const scr = v.k === "s";
+  return {
+    id: "dv" + i, dir: true, kind: scr ? "screen" : undefined,
+    name: v.n, eng: "", region: v.r, city: v.c || v.r, addr: v.c || "",
+    lat: v.lat, lng: v.lng, holes: v.h || 18, par: 72, len: "",
+    rating: 0, ratingN: 0, green: null, caddy: 0, cart: 0, room: null,
+    type: scr ? "스크린" : "골프장", rooms: 0, hoursOpen: "",
+    brandShort: v.n.includes("골프존") ? "골프존" : v.n.includes("프렌즈") ? "카카오VX" : (v.n.includes("티업") || v.n.toUpperCase().includes("SG")) ? "SG골프" : "골프존",
+    brand: "", game: 0, practice: 0, tags: [], facilities: [], hue: scr ? 195 : 140,
+    desc: `전국 디렉토리에 등록된 ${scr ? "스크린골프 매장" : "골프장"}입니다. 정확한 요금과 예약 정보는 네이버 지도에서 확인하세요.`,
+  };
+};
+const courseById = id => (id && id.startsWith && id.startsWith("dv")) ? dirCourse(+id.slice(2)) : COURSES.find(c => c.id === id);
 const hostById = id => HOSTS.find(h => h.id === id);
 const isScreen = c => c && c.kind === "screen";
 const geoOf = id => {
@@ -331,12 +348,21 @@ function koreaMap(interactive = true, kind = "전체") {
       <span class="pin-n">${c.name.replace("골프존파크 ", "").replace("프렌즈 스크린 ", "").split(" ")[0]}${n ? " · " + n : ""}</span>
     </button>`;
   }).join("");
+  // 전국 디렉토리 점 (필드: 라임, 스크린: 블루)
+  const dirDots = DIRV.map((v, i) => {
+    if (kind === "스크린" && v.k !== "s") return "";
+    if (kind === "필드" && v.k === "s") return "";
+    const x = ((v.lng - GEO.minLng) / (GEO.maxLng - GEO.minLng)) * 100;
+    const y = ((GEO.maxLat - v.lat) / (GEO.maxLat - GEO.minLat)) * 100;
+    if (x < 0 || x > 100 || y < 0 || y > 100) return "";
+    return `<button class="dir-dot ${v.k === "s" ? "scr" : ""}" style="left:${x.toFixed(1)}%;top:${y.toFixed(1)}%" ${interactive ? `onclick="event.stopPropagation();location.hash='#/course/dv${i}'"` : ""} aria-label="${v.n}"></button>`;
+  }).join("");
   return `<div class="map-box">
     <svg viewBox="0 0 ${GEO.W} ${GEO.H}">
       <defs><pattern id="mdots" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="1.4" cy="1.4" r=".95" fill="rgba(214,249,75,.13)"/></pattern></defs>
       ${paths}${dots}
     </svg>
-    ${labels}${pins}
+    ${labels}${dirDots}${pins}
   </div>`;
 }
 window.pinSheet = cid => {
@@ -347,7 +373,7 @@ window.pinSheet = cid => {
       <div class="sat" style="width:64px;height:64px;border-radius:18px;flex:none">${satShot(c, 14)}</div>
       <div>
         <div style="font-size:17px;font-weight:900">${c.name}</div>
-        <div style="font-size:12.5px;color:var(--ink-3);font-weight:600;margin-top:3px">${c.city} · ${c.holes}홀 · ${c.type} · ${c.rating}점</div>
+        <div style="font-size:12.5px;color:var(--ink-3);font-weight:600;margin-top:3px">${c.city}${isScreen(c) ? "" : " · " + c.holes + "홀"} · ${c.type}${c.rating ? " · " + c.rating + "점" : ""}</div>
       </div>
     </div>
     ${posts.length
@@ -504,6 +530,7 @@ function renderHome() {
         <div class="hero-top">
           <div class="hero-logo"><span class="dot"></span>LASTTEE</div>
           <div class="hero-acts">
+            <button class="hero-bell" onclick="location.hash='#/search'"><i class="ph-bold ph-magnifying-glass"></i></button>
             <button class="hero-bell" onclick="location.hash='#/chat'"><i class="ph-fill ph-chat-circle-dots"></i>${unread ? '<span class="badge red"></span>' : ""}</button>
             <button class="hero-bell" onclick="location.hash='#/alerts'"><i class="ph-fill ph-bell"></i><span class="badge"></span></button>
           </div>
@@ -618,6 +645,7 @@ function renderMap() {
     <div class="chips" id="map-kind" style="padding-bottom:10px">
       ${["전체", "필드", "스크린"].map(k => `<button class="chip ${mapState.kind === k ? "on" : ""}" data-k="${k}">${k === "필드" ? '<i class="ph-fill ph-golf"></i> ' : k === "스크린" ? '<i class="ph-fill ph-monitor-play"></i> ' : ""}${k}</button>`).join("")}
       <button class="chip" style="margin-left:auto;background:var(--green);border-color:var(--green);color:var(--lime)" onclick="location.hash='#/nearby'"><i class="ph-fill ph-map-pin-area"></i> 동네 시세</button>
+      <button class="chip" onclick="location.hash='#/search'"><i class="ph-bold ph-magnifying-glass"></i> 검색</button>
     </div>
     <div class="px in">${koreaMap(true, mapState.kind)}</div>
     <div class="px" style="margin-top:14px">
@@ -658,10 +686,10 @@ function renderPost(id) {
   const js = joinerIds(p);
   const hrs = p.hours || 2;
   const night = teeDate(p).getHours() >= 18 || teeDate(p).getHours() < 6;
-  const roomTotal = scr ? (night ? c.room.night : c.room.day) * hrs : 0;
+  const roomTotal = scr && c.room ? (night ? c.room.night : c.room.day) * hrs : 0;
   const roomEach = scr ? Math.round(roomTotal / p.total) : 0;
-  const caddyEach = scr ? 0 : Math.round(c.caddy / p.total);
-  const cartEach = scr ? 0 : Math.round(c.cart / p.total);
+  const caddyEach = !scr && c.caddy ? Math.round(c.caddy / p.total) : 0;
+  const cartEach = !scr && c.cart ? Math.round(c.cart / p.total) : 0;
 
   appEl.innerHTML = `
   <div class="view" style="padding-bottom:120px">
@@ -695,13 +723,14 @@ function renderPost(id) {
         <h3><i class="ph-fill ph-receipt"></i>1인 비용 (총 ${p.total}인 기준)</h3>
         ${scr ? `
         <div class="fee-row"><span>빈자리 그대로면 1인 부담</span><b><del style="color:var(--ink-3);font-weight:600">${won(p.normal)}</del></b></div>
+        ${roomTotal ? `
         <div class="fee-row"><span>룸 대여 ${hrs}시간 (팀당)</span><b>${won(roomTotal)}</b></div>
-        <div class="fee-row"><span>${p.total}인 채우면 룸비 1/${p.total}</span><b>${won(roomEach)}</b></div>
+        <div class="fee-row"><span>${p.total}인 채우면 룸비 1/${p.total}</span><b>${won(roomEach)}</b></div>` : ""}
         <div class="fee-row"><span>절약되는 금액</span><b class="save">${won(p.normal - p.price)} 절약</b></div>
         ` : `
         <div class="fee-row"><span>정상가 (그린피+캐디+카트)</span><b><del style="color:var(--ink-3);font-weight:600">${won(p.normal)}</del></b></div>
-        <div class="fee-row"><span>캐디피 1/${p.total}</span><b>${won(caddyEach)} 포함</b></div>
-        <div class="fee-row"><span>카트비 1/${p.total}</span><b>${won(cartEach)} 포함</b></div>
+        ${caddyEach ? `<div class="fee-row"><span>캐디피 1/${p.total}</span><b>${won(caddyEach)} 포함</b></div>` : ""}
+        ${cartEach ? `<div class="fee-row"><span>카트비 1/${p.total}</span><b>${won(cartEach)} 포함</b></div>` : ""}
         <div class="fee-row"><span>절약되는 금액</span><b class="save">${won(p.normal - p.price)} 절약</b></div>
         `}
         <div class="fee-row total"><span>라스트티 참여가</span><b>${won(p.price)}</b></div>
@@ -731,15 +760,15 @@ function renderPost(id) {
         <h3><i class="ph-fill ${scr ? "ph-monitor-play" : "ph-golf"}"></i>${c.name}</h3>
         <div class="spec-grid">
           ${scr ? `
-          <div class="spec"><b>룸 ${c.rooms}개</b><span>규모</span></div>
+          <div class="spec"><b>${c.rooms ? "룸 " + c.rooms + "개" : "스크린"}</b><span>규모</span></div>
           <div class="spec"><b>${c.brandShort}</b><span>시뮬레이터</span></div>
           <div class="spec"><b>${c.hoursOpen === "24시간" ? "24시간" : "심야"}</b><span>운영</span></div>
           ` : `
           <div class="spec"><b>${c.holes}홀</b><span>규모</span></div>
           <div class="spec"><b>파 ${c.par}</b><span>레귤러</span></div>
-          <div class="spec"><b>${c.len}</b><span>전장</span></div>
+          <div class="spec"><b>${c.len || "실측"}</b><span>전장</span></div>
           `}
-          <div class="spec"><b>${c.rating}점</b><span>${c.ratingN.toLocaleString()}개 평가</span></div>
+          <div class="spec"><b>${c.rating ? c.rating + "점" : "신규"}</b><span>${c.rating ? c.ratingN.toLocaleString() + "개 평가" : "평가 준비 중"}</span></div>
         </div>
         <div class="gallery" style="margin-top:14px">
           ${scr ? `
@@ -890,19 +919,19 @@ function renderCourse(id) {
           ${c.tags.map(t => `<span class="tag lime">${t}</span>`).join("")}
         </div>
         <div style="font-size:22px;font-weight:900;letter-spacing:-.02em">${c.name}</div>
-        <div style="font-size:12.5px;color:var(--ink-3);font-weight:600;margin-top:3px">${c.eng}${c.open ? " · " + c.open + "년 개장" : ""}${scr ? " · " + c.brand : ""}</div>
+        ${c.eng || c.open || (scr && c.brand) ? `<div style="font-size:12.5px;color:var(--ink-3);font-weight:600;margin-top:3px">${c.eng}${c.open ? " · " + c.open + "년 개장" : ""}${scr && c.brand ? " · " + c.brand : ""}</div>` : ""}
         <div style="font-size:13px;color:var(--ink-2);font-weight:600;margin-top:8px"><i class="ph-fill ph-map-pin" style="color:var(--green-2)"></i> ${c.addr || c.city}</div>
         <div class="spec-grid" style="margin-top:16px">
           ${scr ? `
-          <div class="spec"><b>룸 ${c.rooms}개</b><span>규모</span></div>
+          <div class="spec"><b>${c.rooms ? "룸 " + c.rooms + "개" : "스크린"}</b><span>규모</span></div>
           <div class="spec"><b>${c.brandShort}</b><span>시뮬레이터</span></div>
-          <div class="spec"><b>${c.hoursOpen}</b><span>운영</span></div>
+          <div class="spec"><b>${c.hoursOpen || "매장 문의"}</b><span>운영</span></div>
           ` : `
           <div class="spec"><b>${c.holes}홀</b><span>규모</span></div>
           <div class="spec"><b>파 ${c.par}</b><span>레귤러</span></div>
-          <div class="spec"><b>${c.len}</b><span>전장</span></div>
+          <div class="spec"><b>${c.len || "실측"}</b><span>전장</span></div>
           `}
-          <div class="spec"><b>${c.rating}점</b><span>${c.ratingN.toLocaleString()}개 평가</span></div>
+          <div class="spec"><b>${c.rating ? c.rating + "점" : "신규"}</b><span>${c.rating ? c.ratingN.toLocaleString() + "개 평가" : "평가 준비 중"}</span></div>
         </div>
         <p style="margin-top:16px;font-size:14px;line-height:1.7;color:var(--ink-2);font-weight:500">${c.desc}</p>
         <div style="margin-top:14px">${naverBtn(c)}</div>
@@ -926,24 +955,27 @@ function renderCourse(id) {
 
       <div class="d-card in">
         <h3><i class="ph-fill ph-currency-krw"></i>정상 요금표</h3>
-        ${scr ? `
+        ${scr && c.room ? `
         <div class="fee-row"><span>룸 대여 주간 (시간당)</span><b>${won(c.room.day)}</b></div>
         <div class="fee-row"><span>룸 대여 야간 (시간당)</span><b>${won(c.room.night)}</b></div>
         <div class="fee-row"><span>18홀 1게임 (1인)</span><b>${won(c.game)}</b></div>
         <div class="fee-row"><span>연습 모드 (1시간)</span><b>${won(c.practice)}</b></div>
-        ` : `
+        ` : !scr && c.green ? `
         <div class="fee-row"><span>그린피 (주중)</span><b>${won(c.green.wd)}</b></div>
         <div class="fee-row"><span>그린피 (주말)</span><b>${won(c.green.we)}</b></div>
         <div class="fee-row"><span>캐디피 (팀당)</span><b>${won(c.caddy)}</b></div>
         <div class="fee-row"><span>카트비 (팀당)</span><b>${won(c.cart)}</b></div>
+        ` : `
+        <p style="font-size:13.5px;color:var(--ink-2);font-weight:600;line-height:1.6">아직 요금 정보가 등록되지 않은 곳이에요. 아래 네이버 지도 버튼으로 최신 요금과 예약 정보를 확인하세요.</p>
         `}
         <p style="margin-top:10px;font-size:11.5px;color:var(--ink-3);font-weight:600">시즌과 요일에 따라 달라질 수 있어요. 정확한 요금은 네이버 지도에서 확인하세요.</p>
       </div>
 
+      ${c.facilities.length ? `
       <div class="d-card in">
         <h3><i class="ph-fill ph-buildings"></i>시설</h3>
         <div class="facil">${c.facilities.map(f => `<span class="tag">${f}</span>`).join("")}</div>
-      </div>
+      </div>` : ""}
 
       <div class="d-card in">
         <h3><i class="ph-fill ph-lightning"></i>진행 중인 모집 ${posts.length ? `<span class="tag red" style="margin-left:2px">${posts.length}건</span>` : ""}</h3>
@@ -990,6 +1022,7 @@ function renderNew() {
     <label class="f-label" id="np-venue-label">골프장</label>
     <div class="f-input"><i class="ph ph-golf" style="color:var(--ink-3)"></i>
       <select id="np-course">${venueOpts("field")}</select></div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="venuePickSheet()"><i class="ph-bold ph-magnifying-glass"></i>전국 ${(COURSES.length + DIRV.length).toLocaleString()}곳에서 검색</button>
 
     <label class="f-label">날짜 <span id="np-date-sel" style="font-weight:700;color:var(--green-2);margin-left:6px">오늘</span></label>
     <div class="cal" id="np-cal"></div>
@@ -1120,6 +1153,37 @@ function renderNew() {
   };
   $("#np-normal").addEventListener("input", offCalc);
   $("#np-price").addEventListener("input", offCalc);
+
+  /* 전국 검색으로 골프장 선택 → select에 옵션 주입 */
+  window.venuePickSheet = () => {
+    const scr = st.kind === "screen";
+    const pool = allVenues().filter(v => (scr ? v.scr : !v.scr));
+    const rowsOf = q => {
+      const qq = (q || "").trim().toLowerCase();
+      return pool.filter(v => !qq || v.name.toLowerCase().includes(qq)).slice(0, 30)
+        .map(v => `<div class="s-row" onclick="pickVenue('${v.id}','${v.name.replace(/'/g, "")}')">
+          <span class="s-ic ${v.scr ? "scr" : ""}"><i class="ph-fill ${v.scr ? "ph-monitor-play" : "ph-golf"}"></i></span>
+          <div style="flex:1;min-width:0"><b>${v.name}</b><div class="s-sub">${v.region}${v.city && v.city !== v.region ? " · " + v.city : ""}</div></div>
+        </div>`).join("") || '<div class="empty" style="padding:26px"><b>검색 결과가 없어요</b></div>';
+    };
+    openSheet(`
+      <div style="font-size:17px;font-weight:900;margin-bottom:12px">${scr ? "스크린 매장" : "골프장"} 검색</div>
+      <div class="f-input"><i class="ph-bold ph-magnifying-glass" style="color:var(--ink-3)"></i><input id="vp-q" placeholder="이름으로 검색"></div>
+      <div id="vp-list" style="margin-top:12px;max-height:46dvh;overflow-y:auto">${rowsOf("")}</div>
+    `);
+    $("#vp-q").addEventListener("input", e => { $("#vp-list").innerHTML = rowsOf(e.target.value); });
+  };
+  window.pickVenue = (id, name) => {
+    const sel = $("#np-course");
+    if (![...sel.options].some(o => o.value === id)) {
+      const o = document.createElement("option");
+      o.value = id; o.textContent = name;
+      sel.appendChild(o);
+    }
+    sel.value = id;
+    closeSheet();
+    toast(name + " 선택됨");
+  };
   $("#np-go").addEventListener("click", () => {
     st.courseId = $("#np-course").value;
     st.tee = $("#np-tee").value || "07:30";
@@ -1761,6 +1825,18 @@ function mountNearbyMap() {
     const sub = "abcd"[Math.abs(tx + ty) % 4];
     html += `<img class="nb-tile" style="left:${left}px;top:${top}px" src="https://${sub}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${tx}/${ty}@2x.png" alt="">`;
   }
+  // 디렉토리 스크린 매장 (시세 미등록: 브랜드 점으로 표시)
+  let dotN = 0;
+  DIRV.forEach((v, i) => {
+    if (v.k !== "s" || dotN > 40) return;
+    const [vx, vy] = tileXY(v.lat, v.lng, z);
+    const px = vx * 256 - (cx - w / 2), py = vy * 256 - (cy - h / 2);
+    if (px < 14 || px > w - 14 || py < 14 || py > h - 14) return;
+    const bs = v.n.includes("프렌즈") ? "카카오VX" : (v.n.includes("티업") || v.n.toUpperCase().includes("SG")) ? "SG골프" : "골프존";
+    const bp = BRAND_PIN[bs];
+    dotN++;
+    html += `<button class="nb-dot" style="left:${px}px;top:${py}px;background:${bp.bg};color:${bp.fg}" onclick="location.hash='#/course/dv${i}'" aria-label="${v.n}">${bp.ch}</button>`;
+  });
   dvs.forEach((c, i) => {
     const [vx, vy] = tileXY(c.lat, c.lng, z);
     const px = vx * 256 - (cx - w / 2), py = vy * 256 - (cy - h / 2);
@@ -1779,6 +1855,76 @@ window.nbZoom = d => {
   nearbyState.z = Math.max(14, Math.min(17, nearbyState.z + d));
   mountNearbyMap();
 };
+
+/* ── 전국 검색 (골프장 + 스크린 디렉토리) ── */
+let searchState = { q: "", kind: "전체", region: "전체" };
+function allVenues() {
+  const cur = COURSES.map(c => ({ id: c.id, name: c.name, region: c.region, city: c.city, scr: isScreen(c), cur: true }));
+  const dir = DIRV.map((v, i) => ({ id: "dv" + i, name: v.n, region: v.r, city: v.c || v.r, scr: v.k === "s", cur: false }));
+  return cur.concat(dir);
+}
+function searchRows() {
+  const q = searchState.q.trim().toLowerCase();
+  let list = allVenues()
+    .filter(v => searchState.kind === "전체" || (searchState.kind === "스크린" ? v.scr : !v.scr))
+    .filter(v => searchState.region === "전체" || v.region === searchState.region)
+    .filter(v => !q || v.name.toLowerCase().includes(q));
+  const total = list.length;
+  list = list.slice(0, 80);
+  const rows = list.map(v => `
+    <div class="s-row in" onclick="location.hash='#/course/${v.id}'">
+      <span class="s-ic ${v.scr ? "scr" : ""}"><i class="ph-fill ${v.scr ? "ph-monitor-play" : "ph-golf"}"></i></span>
+      <div style="flex:1;min-width:0">
+        <b>${v.name}</b>
+        <div class="s-sub">${v.region}${v.city && v.city !== v.region ? " · " + v.city : ""}${v.cur ? "" : " · 디렉토리"}</div>
+      </div>
+      ${v.cur ? '<span class="tag lime" style="font-size:10px;flex:none">상세 등록</span>' : ""}
+      <i class="ph-bold ph-caret-right" style="color:var(--ink-3);flex:none"></i>
+    </div>`).join("");
+  return { rows: rows || '<div class="empty" style="padding:40px 20px"><b>검색 결과가 없어요</b><p>다른 검색어나 지역으로 찾아보세요.</p></div>', total };
+}
+function renderSearch() {
+  const { rows, total } = searchRows();
+  const allN = allVenues().length;
+  appEl.innerHTML = `
+  <div class="view" style="padding-bottom:40px">
+    <div class="page-head">
+      <button class="back" onclick="history.back()"><i class="ph-bold ph-arrow-left"></i></button>
+      <h1>전국 검색</h1>
+      <span style="margin-left:auto;font-size:12px;font-weight:800;color:var(--ink-3)">${allN.toLocaleString()}곳 등록</span>
+    </div>
+    <div class="px"><div class="f-input in"><i class="ph-bold ph-magnifying-glass" style="color:var(--ink-3)"></i>
+      <input id="s-q" placeholder="골프장 · 스크린 매장 이름 검색" value="${searchState.q}"></div></div>
+    <div class="chips" id="s-kind" style="margin-top:10px;padding-bottom:2px">
+      ${["전체", "필드", "스크린"].map(k => `<button class="chip ${searchState.kind === k ? "on" : ""}" data-k="${k}">${k === "필드" ? '<i class="ph-fill ph-golf"></i> ' : k === "스크린" ? '<i class="ph-fill ph-monitor-play"></i> ' : ""}${k}</button>`).join("")}
+    </div>
+    <div class="chips" id="s-region">
+      ${REGIONS.map(r => `<button class="chip ${searchState.region === r ? "on" : ""}" data-r="${r}">${r}</button>`).join("")}
+    </div>
+    <div class="px" style="margin-top:4px">
+      <div style="font-size:12px;font-weight:700;color:var(--ink-3);margin-bottom:9px" id="s-count">${total.toLocaleString()}곳${total > 80 ? " 중 80곳 표시 · 검색어로 좁혀보세요" : ""}</div>
+      <div id="s-list">${rows}</div>
+    </div>
+  </div>`;
+  const refresh = () => {
+    const r = searchRows();
+    $("#s-list").innerHTML = r.rows;
+    $("#s-count").textContent = r.total.toLocaleString() + "곳" + (r.total > 80 ? " 중 80곳 표시 · 검색어로 좁혀보세요" : "");
+  };
+  $("#s-q").addEventListener("input", e => { searchState.q = e.target.value; refresh(); });
+  $("#s-kind").addEventListener("click", e => {
+    const b = e.target.closest(".chip"); if (!b) return;
+    searchState.kind = b.dataset.k;
+    $$("#s-kind .chip").forEach(x => x.classList.toggle("on", x === b));
+    refresh();
+  });
+  $("#s-region").addEventListener("click", e => {
+    const b = e.target.closest(".chip"); if (!b) return;
+    searchState.region = b.dataset.r;
+    $$("#s-region .chip").forEach(x => x.classList.toggle("on", x === b));
+    refresh();
+  });
+}
 
 /* ── 연습장 구독 나눠쓰기 ── */
 function subCard(s) {
@@ -1855,7 +2001,7 @@ function render() {
   closeSheet();
 
   const tabbar = $("#tabbar");
-  const hideTab = ["ob", "signup", "post", "course", "user", "new", "chat", "pay", "settings", "nearby"].includes(route);
+  const hideTab = ["ob", "signup", "post", "course", "user", "new", "chat", "pay", "settings", "nearby", "search"].includes(route);
   tabbar.classList.toggle("hidden", hideTab);
   $$("#tabbar .tab").forEach(t => t.classList.toggle("active", t.dataset.route === "#/" + route));
   const meDot = $("#tab-me-dot");
@@ -1876,6 +2022,7 @@ function render() {
     case "pay": renderPay(); break;
     case "settings": renderSettings(); break;
     case "nearby": renderNearby(); break;
+    case "search": renderSearch(); break;
     default: renderHome();
   }
 }
