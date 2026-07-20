@@ -1,0 +1,17 @@
+{
+  "name": "라스트티 — 취소된 골프 자리, 반값 조인",
+  "short_name": "라스트티",
+  "description": "일행 취소로 비어버린 티타임, 위약금 대신 할인 조인. 라스트미닛 골프 조인 플랫폼.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#072418",
+  "theme_color": "#0B3B27",
+  "lang": "ko",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "./icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
