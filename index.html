@@ -3,14 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>라스트티 — 취소된 골프 자리, 반값 조인</title>
-<meta name="description" content="일행 취소로 비어버린 티타임, 위약금 대신 할인 조인. 라스트미닛 골프 조인 플랫폼 라스트티.">
+<title>라스트티 | 취소된 골프 자리, 반값 참여</title>
+<meta name="description" content="일행 취소로 비어버린 티타임, 위약금 대신 할인 참여. 라스트미닛 골프 참여 플랫폼 라스트티.">
 <meta name="theme-color" content="#0B3B27">
+<meta name="format-detection" content="telephone=no">
 <meta property="og:title" content="라스트티 LastTee">
-<meta property="og:description" content="취소된 골프 자리, 반값에 조인하세요. 라스트미닛 골프 조인 플랫폼.">
+<meta property="og:description" content="취소된 골프 자리, 반값에 참여하세요. 라스트미닛 골프 참여 플랫폼.">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon-192.png?v=1">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png?v=1">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="라스트티">
@@ -18,7 +20,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css">
-<link rel="stylesheet" href="./styles.css?v=1">
+<link rel="stylesheet" href="./styles.css?v=2">
 </head>
 <body>
 
@@ -27,7 +29,7 @@
   <div class="sp-inner">
     <div class="sp-logo">
       <svg viewBox="0 0 120 120" width="92" height="92">
-        <circle cx="60" cy="60" r="56" fill="var(--lime)"/>
+        <circle cx="60" cy="60" r="56" fill="#D6F94B"/>
         <path class="sp-pole" d="M52 88 L52 30" stroke="#0B3B27" stroke-width="6" stroke-linecap="round"/>
         <path class="sp-flag" d="M55 30 L88 40 L55 52 Z" fill="#0B3B27"/>
         <ellipse class="sp-shadow" cx="58" cy="92" rx="18" ry="4" fill="#0B3B27" opacity=".18"/>
@@ -35,27 +37,28 @@
       </svg>
     </div>
     <div class="sp-word">LASTTEE</div>
-    <div class="sp-sub">취소된 골프 자리, 반값 조인</div>
+    <div class="sp-sub">취소된 골프 자리, 반값 참여</div>
   </div>
 </div>
 
 <!-- 앱 컨테이너 -->
 <div id="app" aria-live="polite"></div>
 
-<!-- 하단 탭바 -->
+<!-- 리퀴드 글래스 탭바 -->
 <nav id="tabbar" class="hidden">
   <button class="tab" data-route="#/home"><i class="ph-fill ph-house"></i><span>홈</span></button>
   <button class="tab" data-route="#/map"><i class="ph-fill ph-map-trifold"></i><span>지도</span></button>
   <button class="tab tab-new" data-route="#/new"><span class="new-btn"><i class="ph-bold ph-plus"></i></span></button>
   <button class="tab" data-route="#/crew"><i class="ph-fill ph-users-three"></i><span>크루</span></button>
-  <button class="tab" data-route="#/me"><i class="ph-fill ph-user-circle"></i><span>MY</span></button>
+  <button class="tab" data-route="#/me"><span id="tab-me-dot" class="tab-dot hidden"></span><i class="ph-fill ph-user-circle"></i><span>MY</span></button>
 </nav>
 
 <!-- 바텀시트 / 토스트 -->
 <div id="sheet-wrap" class="hidden"><div id="sheet-dim"></div><div id="sheet"></div></div>
 <div id="toast"></div>
 
-<script src="./data.js?v=1"></script>
-<script src="./app.js?v=1"></script>
+<script src="./geo.js?v=2"></script>
+<script src="./data.js?v=2"></script>
+<script src="./app.js?v=2"></script>
 </body>
 </html>
