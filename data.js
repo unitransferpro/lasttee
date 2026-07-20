@@ -171,6 +171,68 @@ const COURSES = [
     facilities: ["클럽하우스", "사우나", "레스토랑"],
     desc: "제주공항에서 15분, 여행 일정에 끼워 넣기 가장 좋은 36홀. 바다와 한라산이 동시에 보이는 제주 입문 코스입니다.",
   },
+
+  /* ── 스크린골프 매장 (kind: screen) ── */
+  {
+    id: "sc-gangnam", kind: "screen", name: "골프존파크 강남역점", eng: "Golfzon Park Gangnam", region: "수도권", city: "서울 강남",
+    addr: "서울특별시 강남구 강남대로 인근", lat: 37.4979, lng: 127.0276,
+    type: "스크린", brand: "골프존 투비전 플러스", brandShort: "골프존", rooms: 12, hoursOpen: "24시간",
+    rating: 4.5, ratingN: 412, room: { day: 25000, night: 33000 }, game: 25000, practice: 15000,
+    hue: 200, partner: true,
+    tags: ["24시간", "좌타석 룸", "역세권"],
+    facilities: ["좌타석 룸", "GDR 연습룸", "라운지", "파티룸", "주차 지원", "무인 시스템"],
+    desc: "강남역 도보 3분, 24시간 운영하는 골프존파크. 투비전 플러스 12개 룸에 좌타석 전용 룸과 회식용 파티룸까지 갖춰 퇴근 후 게임 수요가 가장 많은 지점입니다.",
+  },
+  {
+    id: "sc-hongdae", kind: "screen", name: "프렌즈 스크린 홍대점", eng: "Friends Screen Hongdae", region: "수도권", city: "서울 마포",
+    addr: "서울특별시 마포구 양화로 인근", lat: 37.5573, lng: 126.9237,
+    type: "스크린", brand: "카카오VX 프렌즈 스크린", brandShort: "카카오VX", rooms: 9, hoursOpen: "24시간",
+    rating: 4.4, ratingN: 288, room: { day: 22000, night: 30000 }, game: 22000, practice: 13000,
+    hue: 190,
+    tags: ["심야 게임", "초보 친화", "감성 인테리어"],
+    facilities: ["프렌즈 캐릭터 룸", "라운지", "음료 바", "무인 시스템"],
+    desc: "홍대입구역 인근의 카카오VX 프렌즈 스크린. 캐주얼한 분위기라 머리 올리기 전 연습 게임과 심야 라운드로 인기가 많습니다.",
+  },
+  {
+    id: "sc-pangyo", kind: "screen", name: "골프존파크 판교점", eng: "Golfzon Park Pangyo", region: "수도권", city: "경기 성남",
+    addr: "경기도 성남시 분당구 판교역로 인근", lat: 37.3947, lng: 127.1112,
+    type: "스크린", brand: "골프존 투비전 플러스", brandShort: "골프존", rooms: 10, hoursOpen: "06:00 ~ 24:00",
+    rating: 4.6, ratingN: 357, room: { day: 24000, night: 32000 }, game: 24000, practice: 14000,
+    hue: 195,
+    tags: ["판교 직장인", "스킨스 게임", "GDR 레인지"],
+    facilities: ["투비전 플러스 룸", "GDR 연습룸", "라운지", "주차"],
+    desc: "판교 테크노밸리 직장인들의 퇴근 후 성지. 스킨스 내기 게임 모집이 활발하고 GDR 연습룸도 함께 운영합니다.",
+  },
+  {
+    id: "sc-seomyeon", kind: "screen", name: "골프존파크 서면점", eng: "Golfzon Park Seomyeon", region: "영남", city: "부산 부산진",
+    addr: "부산광역시 부산진구 중앙대로 인근", lat: 35.1578, lng: 129.0604,
+    type: "스크린", brand: "골프존 투비전 플러스", brandShort: "골프존", rooms: 11, hoursOpen: "24시간",
+    rating: 4.3, ratingN: 301, room: { day: 22000, night: 30000 }, game: 22000, practice: 13000,
+    hue: 185,
+    tags: ["24시간", "서면 중심가", "야간 인기"],
+    facilities: ["좌타석 룸", "라운지", "음료 바", "무인 시스템"],
+    desc: "서면 한복판의 24시간 골프존파크. 부산 나이트골프 크루의 우천 시 대체 라운드 장소로도 자주 쓰입니다.",
+  },
+  {
+    id: "sc-dunsan", kind: "screen", name: "프렌즈 스크린 둔산점", eng: "Friends Screen Dunsan", region: "충청", city: "대전 서구",
+    addr: "대전광역시 서구 둔산로 인근", lat: 36.3512, lng: 127.378,
+    type: "스크린", brand: "카카오VX 프렌즈 스크린", brandShort: "카카오VX", rooms: 8, hoursOpen: "09:00 ~ 24:00",
+    rating: 4.2, ratingN: 188, room: { day: 20000, night: 27000 }, game: 20000, practice: 12000,
+    hue: 205,
+    tags: ["둔산 중심", "가성비", "초보 친화"],
+    facilities: ["프렌즈 캐릭터 룸", "라운지", "주차"],
+    desc: "대전 둔산동의 프렌즈 스크린. 합리적인 룸비로 충청권 평일 저녁 게임 모임이 꾸준한 지점입니다.",
+  },
+  {
+    id: "sc-jeju", kind: "screen", name: "골프존파크 제주연동점", eng: "Golfzon Park Jeju Yeondong", region: "제주", city: "제주시",
+    addr: "제주특별자치도 제주시 연동", lat: 33.489, lng: 126.4983,
+    type: "스크린", brand: "골프존 투비전 플러스", brandShort: "골프존", rooms: 7, hoursOpen: "10:00 ~ 02:00",
+    rating: 4.3, ratingN: 144, room: { day: 20000, night: 27000 }, game: 20000, practice: 12000,
+    hue: 198,
+    tags: ["우천 대체", "여행객 환영", "신제주"],
+    facilities: ["투비전 룸", "라운지", "주차"],
+    desc: "신제주 연동의 골프존파크. 비 오는 날 필드 대신, 혹은 늦은 밤 한 게임 더 치고 싶은 여행객들이 즐겨 찾습니다.",
+  },
 ];
 
 /* 데모 유저 (호스트) — avatar: AV_GLYPHS 인덱스 */
@@ -344,6 +406,40 @@ const POSTINGS = [
     memo: "제주 도착날 오후 라운드. 공항에서 15분이라 캐리어 들고 바로 오셔도 돼요. 두 자리!",
     ago: "2시간 전",
   },
+
+  /* ── 스크린골프 모집 ── */
+  {
+    id: "p13", courseId: "sc-gangnam", hostId: "h7", day: 0, tee: "20:30", holes: 18, hours: 2,
+    total: 4, joiners: ["h7", "h4"], normal: 33000, price: 12000,
+    reason: "회식 불참 2명", instant: true, level: "누구나",
+    tags: ["퇴근 후", "초보환영", "24시간"], genderPref: "무관",
+    memo: "회사 동료 둘이 회식 때문에 빠졌어요. 룸은 이미 결제했으니 부담 없이 오세요. 실력 무관, 즐겁게 치실 분!",
+    ago: "18분 전",
+  },
+  {
+    id: "p14", courseId: "sc-seomyeon", hostId: "h3", day: 0, tee: "21:40", holes: 18, hours: 2,
+    total: 4, joiners: ["h3", "h6"], normal: 30000, price: 13000,
+    reason: "동반자 야근 이슈", instant: true, level: "누구나",
+    tags: ["퇴근 후", "24시간", "야간 게임"], genderPref: "무관",
+    memo: "서면에서 밤 게임 하실 분 두 분! 비 예보 때문에 필드 대신 잡은 룸입니다. 끝나고 국밥 옵션 있습니다.",
+    ago: "25분 전",
+  },
+  {
+    id: "p15", courseId: "sc-pangyo", hostId: "h5", day: 1, tee: "19:30", holes: 18, hours: 2,
+    total: 4, joiners: ["h5", "h7", "h2"], normal: 21000, price: 15000,
+    reason: "멤버 1명 출장 취소", instant: false, level: "100타 이내",
+    tags: ["스킨스 게임", "퇴근 후", "판교"], genderPref: "무관",
+    memo: "판교 퇴근 후 스킨스 한 게임. 소액 내기라 부담 없고, 100타 이내면 재밌게 치실 수 있어요.",
+    ago: "1시간 전",
+  },
+  {
+    id: "p16", courseId: "sc-hongdae", hostId: "h6", day: 0, tee: "23:50", holes: 18, hours: 2,
+    total: 4, joiners: ["h6", "h4"], normal: 30000, price: 9900,
+    reason: "친구 2명 갑자기 취소", instant: true, level: "누구나",
+    tags: ["심야 게임", "초보환영"], genderPref: "무관",
+    memo: "홍대 심야 게임! 저희 둘 다 백돌이라 진짜 편하게 오시면 됩니다. 끝나고 해장까지 가능하신 분 환영.",
+    ago: "10분 전",
+  },
 ];
 
 /* 골프 크루 — icon: Phosphor 아이콘 클래스 */
@@ -399,6 +495,16 @@ const CREWS = [
     ],
   },
   {
+    id: "c7", name: "퇴근길 스크린 클럽", icon: "ph-monitor-play", region: "전체", members: 645,
+    cover: "linear-gradient(135deg,#1E3A8A,#3B82F6)",
+    desc: "평일 저녁 스크린골프 번개 모임. 룸비는 무조건 1/N, 실력 무관, 내기는 음료수까지만.",
+    schedule: "평일 저녁 상시", tags: ["스크린골프", "퇴근 후", "번개"],
+    feed: [
+      { name: "김민재", avatar: 6, g: 1, text: "오늘 강남역점 20:30 두 자리 비었습니다. 모집 게시글에서 바로 참여 가능!", when: "20분 전", likes: 14 },
+      { name: "이수현", avatar: 2, g: 5, text: "어제 홍대점에서 처음으로 더블파 없이 완주했어요. 스크린 최고 기록!", when: "어제", likes: 31 },
+    ],
+  },
+  {
     id: "c6", name: "싱글로 가는 길", icon: "ph-trophy", region: "전체", members: 198,
     cover: "linear-gradient(135deg,#5F3DC4,#845EF7)",
     desc: "80대 초반부터 싱글 지향 상급자 모임. 진지한 라운드, 대회 준비, 스킨스 게임.",
@@ -435,6 +541,7 @@ const BANKS = ["KB국민", "신한", "우리", "하나", "NH농협", "IBK기업"
 /* 자주 묻는 질문 */
 const FAQS = [
   { q: "왜 이렇게 저렴한가요?", a: "골프장은 4인 예약이 원칙이라 한 명이 빠지면 남은 일행이 위약금이나 미달 그린피를 떠안습니다. 호스트는 그 손해 대신 빈자리를 할인가로 양도하는 것이라 서로에게 이득입니다." },
+  { q: "스크린골프도 참여할 수 있나요?", a: "네! 스크린골프는 룸 단위로 결제하기 때문에 한 명이 빠지면 남은 사람들의 1인 부담이 확 올라갑니다. 빈자리를 채우면 룸비가 다시 1/N이 되니 필드보다도 할인 폭이 큰 경우가 많아요. 홈과 지도에서 스크린 필터로 모아볼 수 있습니다." },
   { q: "결제는 어떻게 하나요?", a: "현장결제 또는 계좌이체 중 선택할 수 있어요. 계좌이체를 선택하면 호스트 확정 후 채팅으로 정산 계좌가 안내됩니다. 그린피는 골프장에서 각자 결제하고, 캐디피와 카트비는 1/N 정산합니다." },
   { q: "혼자 가도 어색하지 않을까요?", a: "참여 전에 호스트와 동반자의 그린지수, 구력, 평균 타수, 후기를 모두 확인할 수 있어요. 채팅으로 미리 인사를 나누는 분들이 많습니다." },
   { q: "취소하면 위약금이 있나요?", a: "티오프 24시간 전까지는 무료 취소입니다. 이후 취소는 참여가의 50%가 위약금으로 부과되고, 노쇼는 그린지수가 크게 깎이며 3회 누적 시 이용이 제한됩니다." },
@@ -444,7 +551,8 @@ const FAQS = [
 
 /* 공지사항 */
 const NOTICES = [
-  { title: "라스트티 v1.1 업데이트 안내", body: "실제 골프장 위성 전경, 상세 지도, 메시지 기능, 계좌이체 결제 수단이 추가됐습니다.", when: "오늘" },
+  { title: "라스트티 v1.2: 스크린골프 오픈", body: "골프존파크와 프렌즈 스크린 매장의 빈자리 참여가 열렸습니다. 룸비 1/N 정산으로 필드보다 큰 할인 폭을 만나보세요.", when: "오늘" },
+  { title: "라스트티 v1.1 업데이트 안내", body: "실제 골프장 위성 전경, 상세 지도, 메시지 기능, 계좌이체 결제 수단이 추가됐습니다.", when: "어제" },
   { title: "여름 시즌 새벽 티오프 모집 증가", body: "무더위로 새벽 및 야간 라운드 모집이 크게 늘고 있어요. 알림을 켜두면 마감 임박 자리를 놓치지 않아요.", when: "3일 전" },
 ];
 

@@ -136,6 +136,8 @@ body.dark .btn-danger{background:#3A1B1D}
 .tag.lime{background:var(--lime-soft);color:#3E5A00}
 .tag.green{background:#E3F2E8;color:var(--green-2)}
 .tag.red{background:#FDEBEC;color:var(--red)}
+.tag.blue{background:#E3EDFB;color:#1B5FBF}
+body.dark .tag.blue{background:#1B2C45;color:#8AB8FF}
 
 /* ── 아바타 ────────────────────────────── */
 .av{background:var(--sand);display:flex;align-items:center;justify-content:center;color:var(--green-deep)}
@@ -198,6 +200,7 @@ body.dark .btn-danger{background:#3A1B1D}
 .hot-timer.urgent{background:rgba(200,30,40,.88);animation:urgentPulse 1.2s infinite}
 @keyframes urgentPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 .hot-off{position:absolute;top:12px;right:12px;background:var(--lime);color:var(--green-deep);font-size:13px;font-weight:900;padding:7px 10px;border-radius:10px;z-index:2}
+.hot-kind{position:absolute;bottom:10px;left:12px;background:rgba(27,95,191,.88);color:#fff;font-size:10.5px;font-weight:800;padding:5px 9px;border-radius:8px;display:flex;align-items:center;gap:4px;backdrop-filter:blur(4px);z-index:2}
 .hot-body{padding:15px 16px 17px}
 .hot-course{font-size:16.5px;font-weight:800;letter-spacing:-.02em}
 .hot-meta{margin-top:5px;font-size:12.5px;color:var(--ink-3);font-weight:600;display:flex;align-items:center;gap:5px}
@@ -243,6 +246,11 @@ body.dark .btn-danger{background:#3A1B1D}
 .pin.dim .pin-dot::after{display:none}
 .pin.dim .pin-dot i{color:#C2D4C8}
 .pin.dim{z-index:1}
+.pin-scr .pin-dot{background:#8AB8FF}
+.pin-scr .pin-dot::after{border-color:rgba(138,184,255,.5)}
+.pin-scr .pin-dot i{color:#0C2A55}
+.pin-scr.dim .pin-dot{background:#57705F}
+.pin-scr.dim .pin-dot i{color:#C2D4C8}
 @keyframes pinDrop{from{transform:rotate(-45deg) translate(14px,-14px) scale(.3);opacity:0}to{transform:rotate(-45deg);opacity:1}}
 @keyframes pinPulse{0%{transform:scale(.8);opacity:1}100%{transform:scale(1.5);opacity:0}}
 .map-sheet-card{display:flex;gap:13px;align-items:center;background:var(--card);border-radius:var(--r-md);padding:14px;box-shadow:var(--shadow-sm);margin-bottom:10px}

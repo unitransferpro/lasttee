@@ -8,11 +8,23 @@ const appEl = $("#app");
 const won = n => "₩" + Math.round(n).toLocaleString("ko-KR");
 const BOOT = new Date();
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-const VERSION = "1.1.0";
+const VERSION = "1.2.0";
 
 const courseById = id => COURSES.find(c => c.id === id);
 const hostById = id => HOSTS.find(h => h.id === id);
-const geoOf = id => (typeof COURSE_GEO !== "undefined" && COURSE_GEO[id]) || null;
+const isScreen = c => c && c.kind === "screen";
+const geoOf = id => {
+  if (typeof COURSE_GEO !== "undefined" && COURSE_GEO[id]) return COURSE_GEO[id];
+  const c = courseById(id);
+  if (c && c.lat) {
+    return {
+      lat: c.lat, lng: c.lng,
+      mx: ((c.lng - GEO.minLng) / (GEO.maxLng - GEO.minLng)) * GEO.W,
+      my: ((GEO.maxLat - c.lat) / (GEO.maxLat - GEO.minLat)) * GEO.H,
+    };
+  }
+  return null;
+};
 
 /* ── 스토어 ────────────────────────────── */
 const Store = {
@@ -49,7 +61,7 @@ function applyTheme() {
 applyTheme();
 
 /* ── 티오프 시간 계산 ───────────────────── */
-const DAY0_OFFSET_H = { p1: 2.4, p2: 4.9, p4: 6.3, p10: 3.2 };
+const DAY0_OFFSET_H = { p1: 2.4, p2: 4.9, p4: 6.3, p10: 3.2, p13: 1.6, p14: 5.5, p16: 7.2 };
 function teeDate(p) {
   if (p.day === 0 && DAY0_OFFSET_H[p.id]) {
     return new Date(BOOT.getTime() + DAY0_OFFSET_H[p.id] * 3600e3);
@@ -254,36 +266,39 @@ function naverBtn(c) {
 /* ── 카드 컴포넌트 ─────────────────────── */
 function hotCard(p) {
   const c = courseById(p.courseId);
+  const scr = isScreen(c);
   return `
   <div class="hot-card in" onclick="location.hash='#/post/${p.id}'">
-    <div class="hot-art sat">${satShot(c, 15, "실제 위성 전경")}
+    <div class="hot-art sat">${satShot(c, scr ? 17 : 15, scr ? "매장 인근 위성" : "실제 위성 전경")}
       <div class="hot-timer"><i class="ph-fill ph-timer"></i><span data-cd="${teeDate(p).getTime()}">00:00</span></div>
       <div class="hot-off">${discount(p)}%</div>
+      ${scr ? '<div class="hot-kind"><i class="ph-fill ph-monitor-play"></i>스크린</div>' : ""}
     </div>
     <div class="hot-body">
       <div class="hot-course">${c.name}</div>
-      <div class="hot-meta"><i class="ph-fill ph-map-pin"></i>${c.city} · ${dayLabel(p)} ${teeStr(p)} · ${p.holes}홀</div>
+      <div class="hot-meta"><i class="ph-fill ph-map-pin"></i>${c.city} · ${dayLabel(p)} ${teeStr(p)} · ${scr ? p.holes + "홀 게임" : p.holes + "홀"}</div>
       <div class="hot-price"><del>${won(p.normal)}</del><b>${won(p.price)}<small> /1인</small></b></div>
     </div>
   </div>`;
 }
 function postCard(p) {
   const c = courseById(p.courseId);
+  const scr = isScreen(c);
   const left = slotsLeft(p);
   const js = joinerIds(p).slice(0, 3).map(id => avat(personOf(id))).join("");
   const mine = p.hostId === "me";
   return `
   <div class="post-card in" onclick="location.hash='#/post/${p.id}'">
     ${mine ? '<div class="mine-flag">내 모집</div>' : ""}
-    <div class="pc-art sat">${satShot(c, 14)}<div class="pc-off">${discount(p)}%</div></div>
+    <div class="pc-art sat">${satShot(c, scr ? 17 : 14)}<div class="pc-off">${discount(p)}%</div></div>
     <div class="pc-main">
       <div class="pc-title">${c.name}</div>
-      <div class="pc-meta">${dayLabel(p)} ${teeStr(p)} · ${p.holes}홀 · ${c.city}</div>
+      <div class="pc-meta">${dayLabel(p)} ${teeStr(p)} · ${scr ? p.holes + "홀 게임" : p.holes + "홀"} · ${c.city}</div>
       <div class="pc-row">
         <div class="pc-price"><del>${won(p.normal)}</del><b>${won(p.price)}<small>/1인</small></b></div>
         <div class="pc-slots"><div class="pc-avatars">${js}</div><span class="pc-need">${left}자리</span></div>
       </div>
-      <div class="pc-badges">${p.tags.slice(0, 3).map(t => `<span class="tag ${t.includes("초보") ? "lime" : ""}">${t}</span>`).join("")}${p.instant ? '<span class="tag green"><i class="ph-fill ph-lightning"></i>즉시확정</span>' : ""}</div>
+      <div class="pc-badges">${scr ? '<span class="tag blue"><i class="ph-fill ph-monitor-play"></i>스크린</span>' : ""}${p.tags.slice(0, 2).map(t => `<span class="tag ${t.includes("초보") ? "lime" : ""}">${t}</span>`).join("")}${p.instant ? '<span class="tag green"><i class="ph-fill ph-lightning"></i>즉시확정</span>' : ""}</div>
     </div>
   </div>`;
 }
@@ -297,21 +312,23 @@ const MAP_LABELS = [
   { t: "충청", lat: 36.45, lng: 126.85 }, { t: "호남", lat: 35.25, lng: 126.75 },
   { t: "영남", lat: 35.95, lng: 128.75 }, { t: "제주", lat: 33.6, lng: 126.9 },
 ];
-function koreaMap(interactive = true) {
+function koreaMap(interactive = true, kind = "전체") {
   const paths = KOREA_PATHS.map(d => `<path class="map-prov" d="${d}"/>`).join("");
   const dots = KOREA_PATHS.map(d => `<path d="${d}" fill="url(#mdots)"/>`).join("");
   const labels = MAP_LABELS.map(l => {
     const [x, y] = proj(l.lat, l.lng);
     return `<div class="map-label" style="left:${x.toFixed(1)}%;top:${y.toFixed(1)}%">${l.t}</div>`;
   }).join("");
-  const pins = COURSES.map((c, i) => {
+  const shown = COURSES.filter(c => kind === "전체" || (kind === "스크린" ? isScreen(c) : !isScreen(c)));
+  const pins = shown.map((c, i) => {
     const g = geoOf(c.id);
     if (!g) return "";
     const n = postsForCourse(c.id).length;
     const x = (g.mx / GEO.W) * 100, y = (g.my / GEO.H) * 100;
-    return `<button class="pin ${n ? "" : "dim"}" style="left:${x.toFixed(1)}%;top:${y.toFixed(1)}%" ${interactive ? `onclick="event.stopPropagation();pinSheet('${c.id}')"` : ""}>
-      <span class="pin-dot" style="animation-delay:${i * 60}ms"><i class="ph-fill ph-golf"></i></span>
-      <span class="pin-n">${c.name.split(" ")[0]}${n ? " · " + n : ""}</span>
+    const scr = isScreen(c);
+    return `<button class="pin ${n ? "" : "dim"} ${scr ? "pin-scr" : ""}" style="left:${x.toFixed(1)}%;top:${y.toFixed(1)}%" ${interactive ? `onclick="event.stopPropagation();pinSheet('${c.id}')"` : ""}>
+      <span class="pin-dot" style="animation-delay:${i * 60}ms"><i class="ph-fill ${scr ? "ph-monitor-play" : "ph-golf"}"></i></span>
+      <span class="pin-n">${c.name.replace("골프존파크 ", "").replace("프렌즈 스크린 ", "").split(" ")[0]}${n ? " · " + n : ""}</span>
     </button>`;
   }).join("");
   return `<div class="map-box">
@@ -462,7 +479,8 @@ function renderSignup() {
 }
 
 /* ── 홈 ──────────────────────────────── */
-let homeState = { region: "전체", sort: "임박순" };
+let homeState = { region: "전체", sort: "임박순", kind: "전체" };
+const kindOf = p => isScreen(courseById(p.courseId)) ? "스크린" : "필드";
 function renderHome() {
   const open = openPosts();
   const today = open.filter(p => teeDate(p).getDate() === BOOT.getDate() && teeDate(p) - BOOT < 864e5).sort((a, b) => teeDate(a) - teeDate(b));
@@ -472,6 +490,7 @@ function renderHome() {
   const unread = unreadTotal();
 
   const filtered = open
+    .filter(p => homeState.kind === "전체" || kindOf(p) === homeState.kind)
     .filter(p => homeState.region === "전체" || courseById(p.courseId).region === homeState.region)
     .sort((a, b) => homeState.sort === "임박순" ? teeDate(a) - teeDate(b) : homeState.sort === "할인순" ? discount(b) - discount(a) : a.price - b.price);
 
@@ -505,12 +524,16 @@ function renderHome() {
 
     <div class="ticker"><div class="ticker-in">
       <em>●</em>방금 이*현님이 블루원 상주 참여 확정, 47% 할인
+      <em>●</em>5분 전 새 모집: 골프존파크 강남역점 오늘 밤 게임, 64% 할인
       <em>●</em>3분 전 김*연님이 클럽72 참여 신청
       <em>●</em>7분 전 새 모집: 설해원 GC 내일 11시, 37% 할인
       <em>●</em>12분 전 박*진님이 그린지수 5.0 후기를 받았어요
     </div></div>
 
     <div class="h-sec px"><h2>지금 참여할 수 있는 라운드</h2><span class="more" onclick="location.hash='#/map'">지도로 보기</span></div>
+    <div class="chips" id="home-kind" style="padding-bottom:2px">
+      ${["전체", "필드", "스크린"].map(k => `<button class="chip kind ${homeState.kind === k ? "on" : ""}" data-k="${k}">${k === "필드" ? '<i class="ph-fill ph-golf"></i> ' : k === "스크린" ? '<i class="ph-fill ph-monitor-play"></i> ' : ""}${k}</button>`).join("")}
+    </div>
     <div class="chips" id="home-chips">
       ${REGIONS.map(r => `<button class="chip ${homeState.region === r ? "on" : ""}" data-r="${r}">${r}</button>`).join("")}
       <button class="chip" id="home-sort" style="margin-left:auto">${homeState.sort} <i class="ph-bold ph-caret-down"></i></button>
@@ -557,9 +580,15 @@ function renderHome() {
     } else homeState.region = b.dataset.r;
     renderHome();
   });
+  $("#home-kind").addEventListener("click", e => {
+    const b = e.target.closest(".chip"); if (!b) return;
+    homeState.kind = b.dataset.k;
+    renderHome();
+  });
 }
 
 /* ── 지도 뷰 ───────────────────────────── */
+let mapState = { kind: "전체" };
 function renderMap() {
   const open = openPosts();
   appEl.innerHTML = `
@@ -567,18 +596,22 @@ function renderMap() {
     <div class="page-head"><h1>빈자리 지도</h1>
       <span style="margin-left:auto" class="tag lime"><i class="ph-fill ph-lightning"></i>실시간 ${open.length}건</span>
     </div>
-    <div class="px in">${koreaMap()}</div>
+    <div class="chips" id="map-kind" style="padding-bottom:10px">
+      ${["전체", "필드", "스크린"].map(k => `<button class="chip ${mapState.kind === k ? "on" : ""}" data-k="${k}">${k === "필드" ? '<i class="ph-fill ph-golf"></i> ' : k === "스크린" ? '<i class="ph-fill ph-monitor-play"></i> ' : ""}${k}</button>`).join("")}
+    </div>
+    <div class="px in">${koreaMap(true, mapState.kind)}</div>
     <div class="px" style="margin-top:14px">
-      <div class="d-card in" style="margin:0;padding:16px 18px;display:flex;gap:16px;align-items:center">
-        <span style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink-2)"><span style="width:12px;height:12px;border-radius:50%;background:var(--lime);display:inline-block"></span>모집 진행 중</span>
+      <div class="d-card in" style="margin:0;padding:16px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink-2)"><span style="width:12px;height:12px;border-radius:50%;background:var(--lime);display:inline-block"></span>필드</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink-2)"><span style="width:12px;height:12px;border-radius:50%;background:#8AB8FF;display:inline-block"></span>스크린</span>
         <span style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink-2)"><span style="width:12px;height:12px;border-radius:50%;background:#57705F;display:inline-block"></span>모집 없음</span>
       </div>
     </div>
-    <div class="h-sec px"><h2>제휴 골프장</h2></div>
+    <div class="h-sec px"><h2>파트너 골프장 · 매장</h2></div>
     <div class="px">
       ${COURSES.filter(c => c.partner).map(c => `
         <div class="map-sheet-card in" onclick="location.hash='#/course/${c.id}'">
-          <div class="sat" style="width:56px;height:56px;border-radius:16px;flex:none">${satShot(c, 14)}</div>
+          <div class="sat" style="width:56px;height:56px;border-radius:16px;flex:none">${satShot(c, isScreen(c) ? 17 : 14)}</div>
           <div style="flex:1"><b style="font-size:14.5px">${c.name} <span class="tag green" style="font-size:10px;vertical-align:1px">파트너</span></b>
             <div style="font-size:12px;color:var(--ink-3);font-weight:600;margin-top:3px">${c.city} · ${c.rating}점 (${c.ratingN.toLocaleString()})</div></div>
           <i class="ph-bold ph-caret-right" style="color:var(--ink-3)"></i>
@@ -586,6 +619,11 @@ function renderMap() {
     </div>
   </div>`;
   stagger();
+  $("#map-kind").addEventListener("click", e => {
+    const b = e.target.closest(".chip"); if (!b) return;
+    mapState.kind = b.dataset.k;
+    renderMap();
+  });
 }
 
 /* ── 모집 상세 ─────────────────────────── */
@@ -593,46 +631,59 @@ function renderPost(id) {
   const p = postById(id);
   if (!p) { location.hash = "#/home"; return; }
   const c = courseById(p.courseId);
+  const scr = isScreen(c);
   const left = slotsLeft(p);
   const joined = S.joined.includes(p.id);
   const mine = p.hostId === "me";
   const js = joinerIds(p);
-  const caddyEach = Math.round(c.caddy / p.total);
-  const cartEach = Math.round(c.cart / p.total);
+  const hrs = p.hours || 2;
+  const night = teeDate(p).getHours() >= 18 || teeDate(p).getHours() < 6;
+  const roomTotal = scr ? (night ? c.room.night : c.room.day) * hrs : 0;
+  const roomEach = scr ? Math.round(roomTotal / p.total) : 0;
+  const caddyEach = scr ? 0 : Math.round(c.caddy / p.total);
+  const cartEach = scr ? 0 : Math.round(c.cart / p.total);
 
   appEl.innerHTML = `
   <div class="view" style="padding-bottom:120px">
     <button class="d-back" onclick="history.back()"><i class="ph-bold ph-arrow-left"></i></button>
     <button class="d-share" onclick="sharePost('${p.id}')"><i class="ph-bold ph-share-network"></i></button>
-    <div class="detail-hero sat">${satShot(c, 15, "실제 위성 전경 (Esri)")}</div>
+    <div class="detail-hero sat">${satShot(c, scr ? 17 : 15, scr ? "매장 인근 위성 (Esri)" : "실제 위성 전경 (Esri)")}</div>
 
     <div class="float-hero-off">
       <div class="d-card in">
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
           <span class="tag red">${discount(p)}% 할인</span>
+          ${scr ? '<span class="tag blue"><i class="ph-fill ph-monitor-play"></i>스크린</span>' : ""}
           ${p.instant ? '<span class="tag green"><i class="ph-fill ph-lightning"></i>즉시확정</span>' : '<span class="tag">호스트 승인제</span>'}
           <span class="tag">${p.level}</span>
           ${p.genderPref !== "무관" ? `<span class="tag lime">${p.genderPref}</span>` : ""}
         </div>
         <div style="font-size:21px;font-weight:900;letter-spacing:-.02em">${c.name}</div>
         <div style="margin-top:6px;font-size:13.5px;color:var(--ink-2);font-weight:600">
-          <i class="ph-fill ph-calendar-check" style="color:var(--green-2)"></i> ${dayLabel(p)} ${teeStr(p)} 티오프 · ${p.holes}홀
+          <i class="ph-fill ph-calendar-check" style="color:var(--green-2)"></i> ${dayLabel(p)} ${teeStr(p)} 시작 · ${scr ? p.holes + "홀 게임 · 룸 " + hrs + "시간" : p.holes + "홀"}
         </div>
         <div style="margin-top:4px;font-size:13.5px;color:var(--ink-2);font-weight:600">
           <i class="ph-fill ph-map-pin" style="color:var(--green-2)"></i> ${c.addr || c.city} · ${c.type}
         </div>
         <div style="margin-top:14px;background:var(--green-deep);color:#fff;border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:13px;font-weight:700;color:rgba(255,255,255,.7)">티오프까지</span>
+          <span style="font-size:13px;font-weight:700;color:rgba(255,255,255,.7)">${scr ? "게임 시작까지" : "티오프까지"}</span>
           <b class="countdown" style="font-size:19px;color:var(--lime)" data-cd="${teeDate(p).getTime()}">00:00</b>
         </div>
       </div>
 
       <div class="d-card in">
         <h3><i class="ph-fill ph-receipt"></i>1인 비용 (총 ${p.total}인 기준)</h3>
+        ${scr ? `
+        <div class="fee-row"><span>빈자리 그대로면 1인 부담</span><b><del style="color:var(--ink-3);font-weight:600">${won(p.normal)}</del></b></div>
+        <div class="fee-row"><span>룸 대여 ${hrs}시간 (팀당)</span><b>${won(roomTotal)}</b></div>
+        <div class="fee-row"><span>${p.total}인 채우면 룸비 1/${p.total}</span><b>${won(roomEach)}</b></div>
+        <div class="fee-row"><span>절약되는 금액</span><b class="save">${won(p.normal - p.price)} 절약</b></div>
+        ` : `
         <div class="fee-row"><span>정상가 (그린피+캐디+카트)</span><b><del style="color:var(--ink-3);font-weight:600">${won(p.normal)}</del></b></div>
         <div class="fee-row"><span>캐디피 1/${p.total}</span><b>${won(caddyEach)} 포함</b></div>
         <div class="fee-row"><span>카트비 1/${p.total}</span><b>${won(cartEach)} 포함</b></div>
         <div class="fee-row"><span>절약되는 금액</span><b class="save">${won(p.normal - p.price)} 절약</b></div>
+        `}
         <div class="fee-row total"><span>라스트티 참여가</span><b>${won(p.price)}</b></div>
         <div style="margin-top:10px;font-size:12px;color:var(--ink-3);font-weight:600;display:flex;align-items:center;gap:6px"><i class="ph-fill ph-bank"></i>결제: 현장결제 또는 계좌이체 중 선택</div>
       </div>
@@ -657,17 +708,29 @@ function renderPost(id) {
       </div>
 
       <div class="d-card in">
-        <h3><i class="ph-fill ph-golf"></i>${c.name}</h3>
+        <h3><i class="ph-fill ${scr ? "ph-monitor-play" : "ph-golf"}"></i>${c.name}</h3>
         <div class="spec-grid">
+          ${scr ? `
+          <div class="spec"><b>룸 ${c.rooms}개</b><span>규모</span></div>
+          <div class="spec"><b>${c.brandShort}</b><span>시뮬레이터</span></div>
+          <div class="spec"><b>${c.hoursOpen === "24시간" ? "24시간" : "심야"}</b><span>운영</span></div>
+          ` : `
           <div class="spec"><b>${c.holes}홀</b><span>규모</span></div>
           <div class="spec"><b>파 ${c.par}</b><span>레귤러</span></div>
           <div class="spec"><b>${c.len}</b><span>전장</span></div>
+          `}
           <div class="spec"><b>${c.rating}점</b><span>${c.ratingN.toLocaleString()}개 평가</span></div>
         </div>
         <div class="gallery" style="margin-top:14px">
+          ${scr ? `
+          <div class="g-shot sat">${satShot(c, 17)}<span class="g-cap">매장 인근</span></div>
+          <div class="g-shot sat">${satShot(c, 15)}<span class="g-cap">동네 전경</span></div>
+          <div class="g-shot sat">${satShot(c, 13)}<span class="g-cap">도시 전경</span></div>
+          ` : `
           <div class="g-shot sat">${satShot(c, 16)}<span class="g-cap">그린 클로즈업</span></div>
           <div class="g-shot sat">${satShot(c, 15)}<span class="g-cap">코스 전경</span></div>
           <div class="g-shot sat">${satShot(c, 14)}<span class="g-cap">주변 지형</span></div>
+          `}
         </div>
         <p style="margin-top:14px;font-size:13.5px;line-height:1.65;color:var(--ink-2);font-weight:500">${c.desc}</p>
         <div style="display:flex;gap:8px;margin-top:14px">
@@ -678,9 +741,11 @@ function renderPost(id) {
 
       <div class="d-card in">
         <h3><i class="ph-fill ph-shield-check"></i>안심 참여 규칙</h3>
-        <div class="info-step" style="margin-top:4px"><span class="n">1</span><p><b>무료 취소</b>는 티오프 24시간 전까지. 이후 취소 시 참여가의 50%가 위약금으로 부과돼요.</p></div>
+        <div class="info-step" style="margin-top:4px"><span class="n">1</span><p><b>무료 취소</b>는 시작 ${scr ? "3시간" : "24시간"} 전까지. 이후 취소 시 참여가의 50%가 위약금으로 부과돼요.</p></div>
         <div class="info-step"><span class="n">2</span><p><b>노쇼</b>는 그린지수가 크게 깎이고, 3회 누적 시 이용이 제한됩니다.</p></div>
-        <div class="info-step"><span class="n">3</span><p>그린피는 골프장에서 각자 결제하고, 캐디피와 카트비는 <b>현장결제 또는 계좌이체</b>로 1/N 정산해요.</p></div>
+        ${scr
+          ? `<div class="info-step"><span class="n">3</span><p>룸비는 호스트가 결제해두고, 참여자는 <b>현장결제 또는 계좌이체</b>로 1/N 정산해요.</p></div>`
+          : `<div class="info-step"><span class="n">3</span><p>그린피는 골프장에서 각자 결제하고, 캐디피와 카트비는 <b>현장결제 또는 계좌이체</b>로 1/N 정산해요.</p></div>`}
       </div>
     </div>
   </div>
@@ -760,13 +825,14 @@ window.doJoin = id => {
 };
 window.cancelJoin = id => {
   const p = postById(id);
+  const freeH = isScreen(courseById(p.courseId)) ? 3 : 24;
   const hoursLeft = (teeDate(p) - Date.now()) / 3600e3;
   openSheet(`
     <div style="text-align:center;padding:6px 0 2px">
       <div class="sheet-ic" style="background:#FDEBEC;color:var(--red)"><i class="ph-fill ph-calendar-x"></i></div>
       <div style="font-size:19px;font-weight:900;margin-top:12px">참여를 취소할까요?</div>
       <p style="font-size:13.5px;color:var(--ink-2);margin-top:8px;font-weight:500;line-height:1.6">
-        ${hoursLeft >= 24 ? "티오프 24시간 전이라 <b>무료 취소</b>예요." : `티오프까지 24시간이 안 남아<br><b style="color:var(--red)">참여가의 50% 위약금</b>이 발생해요.`}
+        ${hoursLeft >= freeH ? `시작 ${freeH}시간 전이라 <b>무료 취소</b>예요.` : `시작까지 ${freeH}시간이 안 남아<br><b style="color:var(--red)">참여가의 50% 위약금</b>이 발생해요.`}
       </p>
       <button class="btn btn-danger" style="margin-top:16px" onclick="doCancel('${id}')">취소하기</button>
       <button class="btn btn-ghost" style="margin-top:8px" onclick="closeSheet()">계속 함께할래요</button>
@@ -790,25 +856,32 @@ window.closeMyPost = id => {
 function renderCourse(id) {
   const c = courseById(id);
   if (!c) { location.hash = "#/home"; return; }
+  const scr = isScreen(c);
   const posts = postsForCourse(id);
   appEl.innerHTML = `
   <div class="view" style="padding-bottom:40px">
     <button class="d-back" onclick="history.back()"><i class="ph-bold ph-arrow-left"></i></button>
-    <div class="detail-hero sat">${satShot(c, 15, "실제 위성 전경 (Esri)")}</div>
+    <div class="detail-hero sat">${satShot(c, scr ? 17 : 15, scr ? "매장 인근 위성 (Esri)" : "실제 위성 전경 (Esri)")}</div>
     <div class="float-hero-off">
       <div class="d-card in">
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
           ${c.partner ? '<span class="tag green"><i class="ph-fill ph-handshake"></i>라스트티 파트너</span>' : ""}
-          <span class="tag">${c.type}</span>
+          <span class="tag ${scr ? "blue" : ""}">${scr ? '<i class="ph-fill ph-monitor-play"></i>' : ""}${c.type}</span>
           ${c.tags.map(t => `<span class="tag lime">${t}</span>`).join("")}
         </div>
         <div style="font-size:22px;font-weight:900;letter-spacing:-.02em">${c.name}</div>
-        <div style="font-size:12.5px;color:var(--ink-3);font-weight:600;margin-top:3px">${c.eng}${c.open ? " · " + c.open + "년 개장" : ""}</div>
+        <div style="font-size:12.5px;color:var(--ink-3);font-weight:600;margin-top:3px">${c.eng}${c.open ? " · " + c.open + "년 개장" : ""}${scr ? " · " + c.brand : ""}</div>
         <div style="font-size:13px;color:var(--ink-2);font-weight:600;margin-top:8px"><i class="ph-fill ph-map-pin" style="color:var(--green-2)"></i> ${c.addr || c.city}</div>
         <div class="spec-grid" style="margin-top:16px">
+          ${scr ? `
+          <div class="spec"><b>룸 ${c.rooms}개</b><span>규모</span></div>
+          <div class="spec"><b>${c.brandShort}</b><span>시뮬레이터</span></div>
+          <div class="spec"><b>${c.hoursOpen}</b><span>운영</span></div>
+          ` : `
           <div class="spec"><b>${c.holes}홀</b><span>규모</span></div>
           <div class="spec"><b>파 ${c.par}</b><span>레귤러</span></div>
           <div class="spec"><b>${c.len}</b><span>전장</span></div>
+          `}
           <div class="spec"><b>${c.rating}점</b><span>${c.ratingN.toLocaleString()}개 평가</span></div>
         </div>
         <p style="margin-top:16px;font-size:14px;line-height:1.7;color:var(--ink-2);font-weight:500">${c.desc}</p>
@@ -816,21 +889,34 @@ function renderCourse(id) {
       </div>
 
       <div class="d-card in">
-        <h3><i class="ph-fill ph-images"></i>실제 코스 전경</h3>
+        <h3><i class="ph-fill ph-images"></i>${scr ? "매장 위치" : "실제 코스 전경"}</h3>
         <div class="gallery">
+          ${scr ? `
+          <div class="g-shot sat">${satShot(c, 17)}<span class="g-cap">매장 인근</span></div>
+          <div class="g-shot sat">${satShot(c, 15)}<span class="g-cap">동네 전경</span></div>
+          <div class="g-shot sat">${satShot(c, 13)}<span class="g-cap">도시 전경</span></div>
+          ` : `
           <div class="g-shot sat">${satShot(c, 16)}<span class="g-cap">그린 클로즈업</span></div>
           <div class="g-shot sat">${satShot(c, 15)}<span class="g-cap">코스 전경</span></div>
           <div class="g-shot sat">${satShot(c, 14)}<span class="g-cap">주변 지형</span></div>
+          `}
         </div>
         <p style="margin-top:10px;font-size:11px;color:var(--ink-3);font-weight:600">위성 이미지 Esri World Imagery 제공</p>
       </div>
 
       <div class="d-card in">
         <h3><i class="ph-fill ph-currency-krw"></i>정상 요금표</h3>
+        ${scr ? `
+        <div class="fee-row"><span>룸 대여 주간 (시간당)</span><b>${won(c.room.day)}</b></div>
+        <div class="fee-row"><span>룸 대여 야간 (시간당)</span><b>${won(c.room.night)}</b></div>
+        <div class="fee-row"><span>18홀 1게임 (1인)</span><b>${won(c.game)}</b></div>
+        <div class="fee-row"><span>연습 모드 (1시간)</span><b>${won(c.practice)}</b></div>
+        ` : `
         <div class="fee-row"><span>그린피 (주중)</span><b>${won(c.green.wd)}</b></div>
         <div class="fee-row"><span>그린피 (주말)</span><b>${won(c.green.we)}</b></div>
         <div class="fee-row"><span>캐디피 (팀당)</span><b>${won(c.caddy)}</b></div>
         <div class="fee-row"><span>카트비 (팀당)</span><b>${won(c.cart)}</b></div>
+        `}
         <p style="margin-top:10px;font-size:11.5px;color:var(--ink-3);font-weight:600">시즌과 요일에 따라 달라질 수 있어요. 정확한 요금은 네이버 지도에서 확인하세요.</p>
       </div>
 
@@ -858,7 +944,8 @@ function renderCourse(id) {
 /* ── 모집 올리기 ────────────────────────── */
 function renderNew() {
   if (!S.user) { toast("모집을 올리려면 프로필이 필요해요", "user-circle-plus"); location.hash = "#/signup"; return; }
-  const st = { courseId: COURSES[0].id, day: 0, tee: "07:30", holes: 18, slots: 1, normal: 280000, price: 170000, tags: [], level: "누구나", memo: "", pay: "onsite" };
+  const st = { kind: "field", courseId: COURSES[0].id, day: 0, tee: "07:30", holes: 18, hours: 2, slots: 1, normal: 280000, price: 170000, tags: [], level: "누구나", memo: "", pay: "onsite" };
+  const venueOpts = kind => COURSES.filter(c => kind === "screen" ? isScreen(c) : !isScreen(c)).map(c => `<option value="${c.id}">${c.name} (${c.city})</option>`).join("");
   appEl.innerHTML = `
   <div class="view form-page" style="padding-bottom:120px">
     <div style="display:flex;align-items:center;gap:12px">
@@ -867,17 +954,28 @@ function renderNew() {
     </div>
     <p style="margin-top:10px;font-size:13.5px;color:var(--ink-2);font-weight:500;line-height:1.6">일행이 취소됐나요? 위약금 대신 빈자리를 할인가로 양도하세요. 평균 <b>30분 안에</b> 채워집니다.</p>
 
-    <label class="f-label">골프장</label>
+    <label class="f-label">종류</label>
+    <div class="seg" id="np-kind">
+      <button class="on" data-v="field"><i class="ph-fill ph-golf"></i> 필드 라운드</button>
+      <button data-v="screen"><i class="ph-fill ph-monitor-play"></i> 스크린골프</button>
+    </div>
+
+    <label class="f-label" id="np-venue-label">골프장</label>
     <div class="f-input"><i class="ph ph-golf" style="color:var(--ink-3)"></i>
-      <select id="np-course">${COURSES.map(c => `<option value="${c.id}">${c.name} (${c.city})</option>`).join("")}</select></div>
+      <select id="np-course">${venueOpts("field")}</select></div>
 
     <label class="f-label">날짜</label>
     <div class="seg" id="np-day">${[0, 1, 2, 3, 4].map(d => { const dt = new Date(BOOT.getFullYear(), BOOT.getMonth(), BOOT.getDate() + d); const nm = d === 0 ? "오늘" : d === 1 ? "내일" : `${dt.getMonth() + 1}.${dt.getDate()}`; return `<button class="${d === 0 ? "on" : ""}" data-v="${d}">${nm}<br><span style="font-size:10.5px;opacity:.7">${DOW[dt.getDay()]}요일</span></button>`; }).join("")}</div>
 
-    <label class="f-label">티오프 시간 · 홀</label>
+    <label class="f-label">시작 시간 · 홀</label>
     <div style="display:flex;gap:8px">
       <div class="f-input" style="flex:1"><i class="ph ph-clock" style="color:var(--ink-3)"></i><input type="time" id="np-tee" value="07:30"></div>
       <div class="seg" id="np-holes">${[9, 18, 36].map(h => `<button class="${h === 18 ? "on" : ""}" data-v="${h}">${h}홀</button>`).join("")}</div>
+    </div>
+
+    <div id="np-hours-wrap" class="hidden">
+      <label class="f-label">룸 이용 시간</label>
+      <div class="seg" id="np-hours">${[1, 2, 3].map(h => `<button class="${h === 2 ? "on" : ""}" data-v="${h}">${h}시간</button>`).join("")}</div>
     </div>
 
     <label class="f-label">채워야 할 자리</label>
@@ -925,7 +1023,20 @@ function renderNew() {
       } else hint.classList.add("hidden");
     }
   });
-  seg("#np-day", "day", true); seg("#np-holes", "holes", true); seg("#np-slots", "slots", true); seg("#np-level", "level"); seg("#np-pay", "pay");
+  seg("#np-day", "day", true); seg("#np-holes", "holes", true); seg("#np-hours", "hours", true); seg("#np-slots", "slots", true); seg("#np-level", "level"); seg("#np-pay", "pay");
+  $("#np-kind").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    $$("#np-kind button").forEach(x => x.classList.remove("on")); b.classList.add("on");
+    st.kind = b.dataset.v;
+    const scr = st.kind === "screen";
+    $("#np-course").innerHTML = venueOpts(st.kind);
+    $("#np-venue-label").textContent = scr ? "스크린골프 매장" : "골프장";
+    $("#np-hours-wrap").classList.toggle("hidden", !scr);
+    $("#np-tee").value = scr ? "20:00" : "07:30";
+    $("#np-normal").value = scr ? 30000 : 280000;
+    $("#np-price").value = scr ? 13000 : 170000;
+    $("#np-normal").dispatchEvent(new Event("input"));
+  });
   $("#np-tags").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
     b.classList.toggle("on");
@@ -954,6 +1065,7 @@ function renderNew() {
       reason: "일행 취소", instant: true, level: st.level, tags: st.tags.length ? st.tags : ["매너중시"],
       genderPref: "무관", memo: st.memo, ago: "방금 전", pay: st.pay,
     };
+    if (st.kind === "screen") post.hours = st.hours;
     S.myPosts.push(post);
     Store.save();
     toast("모집이 올라갔어요! 신청이 오면 알려드릴게요");
