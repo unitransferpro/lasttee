@@ -8,7 +8,7 @@ const appEl = $("#app");
 const won = n => "₩" + Math.round(n).toLocaleString("ko-KR");
 const BOOT = new Date();
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-const VERSION = "1.4.0";
+const VERSION = "1.4.1";
 
 /* 전국 디렉토리(venues.js) 항목 → 코스 객체 (dv{index} id) */
 const DIRV = typeof DIR_VENUES !== "undefined" ? DIR_VENUES : [];
@@ -16,15 +16,16 @@ const dirCourse = i => {
   const v = DIRV[i];
   if (!v) return null;
   const scr = v.k === "s";
+  const city = v.a ? v.a.split(" ").slice(0, 2).join(" ") : (v.c || v.r);
   return {
-    id: "dv" + i, dir: true, kind: scr ? "screen" : undefined,
-    name: v.n, eng: "", region: v.r, city: v.c || v.r, addr: v.c || "",
+    id: "dv" + i, dir: true, kind: scr ? "screen" : undefined, approx: !!v.x || !v.lat,
+    name: v.n, eng: "", region: v.r, city, addr: v.a || v.c || "",
     lat: v.lat, lng: v.lng, holes: v.h || 18, par: 72, len: "",
     rating: 0, ratingN: 0, green: null, caddy: 0, cart: 0, room: null,
-    type: scr ? "스크린" : "골프장", rooms: 0, hoursOpen: "",
+    type: v.t || (scr ? "스크린" : "골프장"), rooms: 0, hoursOpen: "",
     brandShort: v.n.includes("골프존") ? "골프존" : v.n.includes("프렌즈") ? "카카오VX" : (v.n.includes("티업") || v.n.toUpperCase().includes("SG")) ? "SG골프" : "골프존",
-    brand: "", game: 0, practice: 0, tags: [], facilities: [], hue: scr ? 195 : 140,
-    desc: `전국 디렉토리에 등록된 ${scr ? "스크린골프 매장" : "골프장"}입니다. 정확한 요금과 예약 정보는 네이버 지도에서 확인하세요.`,
+    brand: "", game: 0, practice: 0, tags: v.t ? [v.t] : [], facilities: [], hue: scr ? 195 : 140,
+    desc: `전국 디렉토리에 등록된 ${scr ? "스크린골프 매장" : v.t ? v.t + " 골프장" : "골프장"}입니다. 정확한 요금과 예약 정보는 네이버 지도에서 확인하세요.`,
   };
 };
 const courseById = id => (id && id.startsWith && id.startsWith("dv")) ? dirCourse(+id.slice(2)) : COURSES.find(c => c.id === id);
@@ -138,8 +139,9 @@ function satUrl(c, z) {
   return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${Math.floor(y)}/${Math.floor(x)}`;
 }
 function satShot(c, z, cap = "") {
-  const u = satUrl(c, z);
-  return `${courseArt(c, 0)}${u ? `<img loading="lazy" src="${u}" alt="${c.name} 위성 전경" onerror="this.remove()">` : ""}${cap ? `<span class="sat-tag">${cap}</span>` : ""}`;
+  // 근사 좌표(주소 단위 지오코딩)는 위성 사진을 실제 전경으로 표시하지 않음
+  const u = c.approx ? "" : satUrl(c, z);
+  return `${courseArt(c, 0)}${u ? `<img loading="lazy" src="${u}" alt="${c.name} 위성 전경" onerror="this.remove()">` : ""}${u && cap ? `<span class="sat-tag">${cap}</span>` : ""}`;
 }
 
 /* ── 코스 일러스트 (위성 로드 전 폴백) ─────────── */
@@ -350,6 +352,7 @@ function koreaMap(interactive = true, kind = "전체") {
   }).join("");
   // 전국 디렉토리 점 (필드: 라임, 스크린: 블루)
   const dirDots = DIRV.map((v, i) => {
+    if (!v.lat) return "";
     if (kind === "스크린" && v.k !== "s") return "";
     if (kind === "필드" && v.k === "s") return "";
     const x = ((v.lng - GEO.minLng) / (GEO.maxLng - GEO.minLng)) * 100;
@@ -1859,8 +1862,8 @@ window.nbZoom = d => {
 /* ── 전국 검색 (골프장 + 스크린 디렉토리) ── */
 let searchState = { q: "", kind: "전체", region: "전체" };
 function allVenues() {
-  const cur = COURSES.map(c => ({ id: c.id, name: c.name, region: c.region, city: c.city, scr: isScreen(c), cur: true }));
-  const dir = DIRV.map((v, i) => ({ id: "dv" + i, name: v.n, region: v.r, city: v.c || v.r, scr: v.k === "s", cur: false }));
+  const cur = COURSES.map(c => ({ id: c.id, name: c.name, region: c.region, city: c.city, scr: isScreen(c), cur: true, t: c.type }));
+  const dir = DIRV.map((v, i) => ({ id: "dv" + i, name: v.n, region: v.r, city: v.a ? v.a.split(" ").slice(0, 2).join(" ") : (v.c || v.r), scr: v.k === "s", cur: false, t: v.t || "" }));
   return cur.concat(dir);
 }
 function searchRows() {
@@ -1876,7 +1879,7 @@ function searchRows() {
       <span class="s-ic ${v.scr ? "scr" : ""}"><i class="ph-fill ${v.scr ? "ph-monitor-play" : "ph-golf"}"></i></span>
       <div style="flex:1;min-width:0">
         <b>${v.name}</b>
-        <div class="s-sub">${v.region}${v.city && v.city !== v.region ? " · " + v.city : ""}${v.cur ? "" : " · 디렉토리"}</div>
+        <div class="s-sub">${v.region}${v.city && v.city !== v.region ? " · " + v.city : ""}${v.t && !v.scr ? " · " + v.t : ""}${v.cur ? "" : ""}</div>
       </div>
       ${v.cur ? '<span class="tag lime" style="font-size:10px;flex:none">상세 등록</span>' : ""}
       <i class="ph-bold ph-caret-right" style="color:var(--ink-3);flex:none"></i>
