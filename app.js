@@ -8,7 +8,7 @@ const appEl = $("#app");
 const won = n => "₩" + Math.round(n).toLocaleString("ko-KR");
 const BOOT = new Date();
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-const VERSION = "1.7.1";
+const VERSION = "1.8.0";
 
 /* 전국 디렉토리(venues.js) 항목 → 코스 객체 (dv{index} id) */
 const DIRV = typeof DIR_VENUES !== "undefined" ? DIR_VENUES : [];
@@ -24,7 +24,7 @@ const dirCourse = i => {
     lat: v.lat, lng: v.lng, holes: v.h || 18, par: 72, len: "",
     rating: 0, ratingN: 0, green: null, caddy: 0, cart: 0, room: null,
     type: v.t || (scr ? "스크린" : rng ? "연습장" : "골프장"), rooms: 0, hoursOpen: "",
-    brandShort: v.n.includes("골프존") ? "골프존" : v.n.includes("프렌즈") ? "카카오VX" : (v.n.includes("티업") || v.n.toUpperCase().includes("SG")) ? "SG골프" : "골프존",
+    brandShort: v.n.includes("골프존") ? "골프존" : (v.n.includes("프렌즈") || v.n.includes("티업")) ? "카카오VX" : v.n.toUpperCase().includes("SG") ? "SG골프" : "골프존",
     brand: "", game: 0, practice: 0, tags: v.t ? [v.t] : [], facilities: [], hue: scr ? 195 : rng ? 260 : 140,
     desc: `전국 디렉토리에 등록된 ${scr ? "스크린골프 매장" : rng ? "골프연습장" : v.t ? v.t + " 골프장" : "골프장"}입니다. 정확한 요금과 예약 정보는 네이버 지도에서 확인하세요.`,
   };
@@ -2230,73 +2230,154 @@ window.nbZoom = d => {
 };
 
 /* ── 전국 검색 (골프장 + 스크린 디렉토리) ── */
-let searchState = { q: "", kind: "전체", region: "전체" };
+let searchState = { q: "", kind: "전체", region: "전체", type: "전체", holes: "전체", limit: 30 };
 function allVenues() {
-  const cur = COURSES.map(c => ({ id: c.id, name: c.name, region: c.region, city: c.city, scr: isScreen(c), rng: false, cur: true, t: c.type }));
-  const dir = DIRV.map((v, i) => ({ id: "dv" + i, name: v.n, region: v.r, city: v.a ? v.a.split(" ").slice(0, 2).join(" ") : (v.c || v.r), scr: v.k === "s", rng: v.k === "r", cur: false, t: v.t || "" }));
+  const cur = COURSES.map(c => ({ id: c.id, name: c.name, region: c.region, city: c.city, scr: isScreen(c), rng: false, cur: true, t: c.type, h: c.holes || 0 }));
+  const dir = DIRV.map((v, i) => ({ id: "dv" + i, name: v.n, region: v.r, city: v.a ? v.a.split(" ").slice(0, 2).join(" ") : (v.c || v.r), scr: v.k === "s", rng: v.k === "r", cur: false, t: v.t === "대중제" ? "퍼블릭" : (v.t || ""), h: v.h || 0 }));
   return cur.concat(dir);
 }
-function searchRows() {
+function svMatch(v) {
+  const st = searchState;
+  if (st.kind === "필드" && (v.scr || v.rng)) return false;
+  if (st.kind === "스크린" && !v.scr) return false;
+  if (st.region !== "전체" && v.region !== st.region) return false;
+  if (st.type !== "전체") {
+    if (v.scr) return false;
+    if (st.type === "회원제" && v.t !== "회원제") return false;
+    if (st.type === "퍼블릭" && v.t !== "퍼블릭") return false;
+  }
+  if (st.holes !== "전체") {
+    if (v.scr || !v.h) return false;
+    if (st.holes === "18홀" && v.h > 18) return false;
+    if (st.holes === "27홀" && v.h !== 27) return false;
+    if (st.holes === "36홀+" && v.h < 36) return false;
+  }
+  return true;
+}
+function svRank(name, q) {
+  const n = name.toLowerCase();
+  if (n.startsWith(q)) return 3;
+  if (n.split(/[\s·]/).some(w => w.startsWith(q))) return 2;
+  if (n.includes(q)) return 1;
+  return 0;
+}
+function searchResults() {
   const q = searchState.q.trim().toLowerCase();
-  let list = allVenues()
-    .filter(v => searchState.kind === "전체" || (searchState.kind === "스크린" ? v.scr : searchState.kind === "연습장" ? v.rng : !v.scr && !v.rng))
-    .filter(v => searchState.region === "전체" || v.region === searchState.region)
-    .filter(v => !q || v.name.toLowerCase().includes(q));
-  const total = list.length;
-  list = list.slice(0, 80);
-  const rows = list.map(v => `
-    <div class="s-row in" onclick="location.hash='#/course/${v.id}'">
-      <span class="s-ic ${v.scr ? "scr" : v.rng ? "rng" : ""}"><i class="ph-fill ${v.scr ? "ph-monitor-play" : v.rng ? "ph-barbell" : "ph-golf"}"></i></span>
+  let list = allVenues().filter(svMatch);
+  if (q) {
+    list = list.map(v => ({ v, s: svRank(v.name, q) })).filter(x => x.s > 0)
+      .sort((a, b) => b.s - a.s || (b.v.cur ? 1 : 0) - (a.v.cur ? 1 : 0) || a.v.name.localeCompare(b.v.name, "ko"))
+      .map(x => x.v);
+  } else {
+    list = list.sort((a, b) => (b.cur ? 1 : 0) - (a.cur ? 1 : 0) || a.name.localeCompare(b.name, "ko"));
+  }
+  return list;
+}
+function svRow(v) {
+  const meta = [v.region, v.city && v.city !== v.region ? v.city : "", !v.scr && v.h ? v.h + "홀" : "", !v.scr && v.t ? v.t : v.scr ? "스크린" : ""].filter(Boolean).join(" · ");
+  return `
+    <div class="s-row" onclick="location.hash='#/course/${v.id}'">
+      <span class="s-ic ${v.scr ? "scr" : ""}"><i class="ph-fill ${v.scr ? "ph-monitor-play" : "ph-golf"}"></i></span>
       <div style="flex:1;min-width:0">
         <b>${v.name}</b>
-        <div class="s-sub">${v.region}${v.city && v.city !== v.region ? " · " + v.city : ""}${v.t && !v.scr ? " · " + v.t : ""}${v.cur ? "" : ""}</div>
+        <div class="s-sub">${meta}</div>
       </div>
       ${v.cur ? '<span class="tag lime" style="font-size:10px;flex:none">상세 등록</span>' : ""}
       <i class="ph-bold ph-caret-right" style="color:var(--ink-3);flex:none"></i>
-    </div>`).join("");
-  return { rows: rows || '<div class="empty" style="padding:40px 20px"><b>검색 결과가 없어요</b><p>다른 검색어나 지역으로 찾아보세요.</p></div>', total };
+    </div>`;
 }
+function svIsDefault() {
+  const st = searchState;
+  return !st.q.trim() && st.kind === "전체" && st.region === "전체" && st.type === "전체" && st.holes === "전체";
+}
+function svBody() {
+  if (svIsDefault()) {
+    const all = allVenues();
+    const popular = all.filter(v => v.cur && !v.scr).slice(0, 5);
+    const regionCards = REGIONS.slice(1).map(r => {
+      const n = all.filter(v => v.region === r).length;
+      return `<button class="rg-card" onclick="svSetRegion('${r}')"><b>${r}</b><span>${n.toLocaleString()}곳</span><i class="ph-bold ph-caret-right"></i></button>`;
+    }).join("");
+    return `
+      <div class="mg-title" style="margin-top:4px">지역으로 찾기</div>
+      <div class="rg-grid">${regionCards}</div>
+      <div class="mg-title" style="margin-top:22px">요금까지 등록된 인기 골프장</div>
+      ${popular.map(svRow).join("")}
+      <p style="margin-top:14px;font-size:12px;color:var(--ink-3);font-weight:600;text-align:center">이름을 검색하거나 필터를 선택하면 전국 ${all.length.toLocaleString()}곳에서 찾아드려요</p>`;
+  }
+  const list = searchResults();
+  const shown = list.slice(0, searchState.limit);
+  const rest = list.length - shown.length;
+  if (!list.length) return `<div class="empty" style="padding:40px 20px"><div class="big"><i class="ph ph-magnifying-glass"></i></div><b>검색 결과가 없어요</b><p>검색어나 필터를 바꿔보세요.</p></div>`;
+  return `
+    <div style="font-size:12px;font-weight:700;color:var(--ink-3);margin-bottom:9px">${list.length.toLocaleString()}곳</div>
+    ${shown.map(svRow).join("")}
+    ${rest > 0 ? `<button class="btn btn-ghost" style="margin-top:6px" onclick="svMore()">${Math.min(rest, 30)}곳 더 보기 (남은 ${rest.toLocaleString()}곳)</button>` : ""}`;
+}
+function svRefresh() {
+  const el = $("#s-body");
+  if (el) el.innerHTML = svBody();
+  const cnt = $("#s-total");
+  if (cnt) cnt.textContent = allVenues().length.toLocaleString() + "곳 등록";
+}
+window.svSetRegion = r => {
+  searchState.region = r;
+  searchState.limit = 30;
+  renderSearch();
+};
+window.svMore = () => {
+  searchState.limit += 30;
+  svRefresh();
+};
+window.svClear = () => {
+  searchState.q = "";
+  const inp = $("#s-q");
+  if (inp) { inp.value = ""; inp.focus(); }
+  searchState.limit = 30;
+  svRefresh();
+  const x = $("#s-clear");
+  if (x) x.classList.add("hidden");
+};
 function renderSearch() {
-  const { rows, total } = searchRows();
-  const allN = allVenues().length;
+  const chipsRow = (id, opts, cur, icon = {}) => `
+    <div class="chips" id="${id}" style="padding-bottom:2px">
+      ${opts.map(o => `<button class="chip ${cur === o ? "on" : ""}" data-v="${o}">${icon[o] ? `<i class="ph-fill ${icon[o]}"></i> ` : ""}${o}</button>`).join("")}
+    </div>`;
   appEl.innerHTML = `
   <div class="view" style="padding-bottom:40px">
     <div class="page-head">
-      <button class="back" onclick="history.back()"><i class="ph-bold ph-arrow-left"></i></button>
+      <button class="back" onclick="goBack('#/home')"><i class="ph-bold ph-arrow-left"></i></button>
       <h1>전국 검색</h1>
-      <span style="margin-left:auto;font-size:12px;font-weight:800;color:var(--ink-3)">${allN.toLocaleString()}곳 등록</span>
+      <span id="s-total" style="margin-left:auto;font-size:12px;font-weight:800;color:var(--ink-3)">${allVenues().length.toLocaleString()}곳 등록</span>
     </div>
     <div class="px"><div class="f-input in"><i class="ph-bold ph-magnifying-glass" style="color:var(--ink-3)"></i>
-      <input id="s-q" placeholder="골프장 · 스크린 매장 이름 검색" value="${searchState.q}"></div></div>
-    <div class="chips" id="s-kind" style="margin-top:10px;padding-bottom:2px">
-      ${["전체", "필드", "스크린", "연습장"].map(k => `<button class="chip ${searchState.kind === k ? "on" : ""}" data-k="${k}">${k === "필드" ? '<i class="ph-fill ph-golf"></i> ' : k === "스크린" ? '<i class="ph-fill ph-monitor-play"></i> ' : k === "연습장" ? '<i class="ph-fill ph-barbell"></i> ' : ""}${k}</button>`).join("")}
-    </div>
-    <div class="chips" id="s-region">
-      ${REGIONS.map(r => `<button class="chip ${searchState.region === r ? "on" : ""}" data-r="${r}">${r}</button>`).join("")}
-    </div>
-    <div class="px" style="margin-top:4px">
-      <div style="font-size:12px;font-weight:700;color:var(--ink-3);margin-bottom:9px" id="s-count">${total.toLocaleString()}곳${total > 80 ? " 중 80곳 표시 · 검색어로 좁혀보세요" : ""}</div>
-      <div id="s-list">${rows}</div>
-    </div>
+      <input id="s-q" placeholder="골프장 · 스크린 매장 이름 검색" value="${searchState.q}" autocomplete="off">
+      <button id="s-clear" class="${searchState.q ? "" : "hidden"}" style="color:var(--ink-3);font-size:18px" onclick="svClear()"><i class="ph-fill ph-x-circle"></i></button>
+    </div></div>
+    ${chipsRow("s-kind", ["전체", "필드", "스크린"], searchState.kind, { "필드": "ph-golf", "스크린": "ph-monitor-play" })}
+    ${chipsRow("s-region", REGIONS, searchState.region)}
+    ${chipsRow("s-type", ["전체", "회원제", "퍼블릭"], searchState.type)}
+    ${chipsRow("s-holes", ["전체", "18홀", "27홀", "36홀+"], searchState.holes)}
+    <div class="px" style="margin-top:8px" id="s-body">${svBody()}</div>
   </div>`;
-  const refresh = () => {
-    const r = searchRows();
-    $("#s-list").innerHTML = r.rows;
-    $("#s-count").textContent = r.total.toLocaleString() + "곳" + (r.total > 80 ? " 중 80곳 표시 · 검색어로 좁혀보세요" : "");
-  };
-  $("#s-q").addEventListener("input", e => { searchState.q = e.target.value; refresh(); });
-  $("#s-kind").addEventListener("click", e => {
-    const b = e.target.closest(".chip"); if (!b) return;
-    searchState.kind = b.dataset.k;
-    $$("#s-kind .chip").forEach(x => x.classList.toggle("on", x === b));
-    refresh();
+  $("#s-q").addEventListener("input", e => {
+    searchState.q = e.target.value;
+    searchState.limit = 30;
+    const x = $("#s-clear");
+    if (x) x.classList.toggle("hidden", !searchState.q);
+    svRefresh();
   });
-  $("#s-region").addEventListener("click", e => {
+  const bindChips = (id, key) => $("#" + id).addEventListener("click", e => {
     const b = e.target.closest(".chip"); if (!b) return;
-    searchState.region = b.dataset.r;
-    $$("#s-region .chip").forEach(x => x.classList.toggle("on", x === b));
-    refresh();
+    searchState[key] = b.dataset.v;
+    searchState.limit = 30;
+    $$("#" + id + " .chip").forEach(x => x.classList.toggle("on", x === b));
+    svRefresh();
   });
+  bindChips("s-kind", "kind");
+  bindChips("s-region", "region");
+  bindChips("s-type", "type");
+  bindChips("s-holes", "holes");
 }
 
 /* ── 연습장 구독 나눠쓰기 ── */
