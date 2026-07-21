@@ -8,7 +8,7 @@ const appEl = $("#app");
 const won = n => "₩" + Math.round(n).toLocaleString("ko-KR");
 const BOOT = new Date();
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-const VERSION = "1.7.0";
+const VERSION = "1.7.1";
 
 /* 전국 디렉토리(venues.js) 항목 → 코스 객체 (dv{index} id) */
 const DIRV = typeof DIR_VENUES !== "undefined" ? DIR_VENUES : [];
@@ -1138,7 +1138,7 @@ window.askJoin = id => {
       <div style="background:var(--bg);border-radius:14px;padding:12px;margin-top:8px;font-size:12.5px;color:var(--ink-2);font-weight:600;text-align:left;line-height:1.6">
         티오프 24시간 전까지 무료 취소돼요.<br>호스트에게 회원님의 프로필과 그린지수가 공개돼요.
       </div>
-      <button class="btn btn-primary" style="margin-top:16px" onclick="feeConfirm('${p.id}')">${p.instant ? "다음: 수수료 확인" : "다음: 수수료 확인"}</button>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="feeConfirm('${p.id}')">다음: 수수료 확인</button>
       <button class="btn btn-ghost" style="margin-top:8px" onclick="closeSheet()">다시 볼게요</button>
     </div>
   `);
@@ -1222,8 +1222,23 @@ window.doCancel = id => {
   renderPost(id);
 };
 window.closeMyPost = id => {
+  const p = postById(id);
+  const joinedN = p ? joinerIds(p).length - 1 : 0;
+  openSheet(`
+    <div style="text-align:center;padding:6px 0 2px">
+      <div class="sheet-ic" style="background:#FDEBEC;color:var(--red)"><i class="ph-fill ph-x-circle"></i></div>
+      <div style="font-size:19px;font-weight:900;margin-top:12px">모집을 마감할까요?</div>
+      <p style="font-size:13.5px;color:var(--ink-2);margin-top:8px;font-weight:500;line-height:1.6">
+        ${joinedN > 0 ? `이미 확정된 참여자 ${joinedN}명에게<br>마감 안내가 전달돼요.` : "마감하면 목록에서 내려가고<br>다시 되돌릴 수 없어요."}
+      </p>
+      <button class="btn btn-danger" style="margin-top:16px" onclick="doCloseMyPost('${id}')">마감하기</button>
+      <button class="btn btn-ghost" style="margin-top:8px" onclick="closeSheet()">계속 모집할래요</button>
+    </div>`);
+};
+window.doCloseMyPost = id => {
   S.closed.push(id);
   Store.save();
+  closeSheet();
   toast("모집을 마감했어요");
   location.hash = "#/home";
 };
