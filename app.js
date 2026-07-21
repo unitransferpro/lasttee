@@ -8,7 +8,7 @@ const appEl = $("#app");
 const won = n => "₩" + Math.round(n).toLocaleString("ko-KR");
 const BOOT = new Date();
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-const VERSION = "1.5.0";
+const VERSION = "1.6.0";
 
 /* 전국 디렉토리(venues.js) 항목 → 코스 객체 (dv{index} id) */
 const DIRV = typeof DIR_VENUES !== "undefined" ? DIR_VENUES : [];
@@ -51,6 +51,7 @@ const Store = {
   data: {
     user: null, seenOb: false, joined: [], myPosts: [], crews: [], likes: [], crewFeed: {}, closed: [],
     chats: {}, readAt: {}, pay: null, payPref: "onsite", subJoined: [],
+    notifs: [], notifSeen: 0, pending: [], reqPlan: [], reqs: {}, extraJoiners: {},
     set: { dark: false, nJoin: true, nHot: true, nCrew: true, nMkt: false },
   },
   load() {
@@ -105,7 +106,7 @@ function dayLabel(p) {
 function allPosts() { return POSTINGS.concat(S.myPosts).filter(p => !S.closed.includes(p.id)); }
 function postById(id) { return allPosts().find(p => p.id === id); }
 function joinerIds(p) {
-  const ids = [...p.joiners];
+  const ids = [...p.joiners, ...(S.extraJoiners[p.id] || [])];
   if (S.joined.includes(p.id)) ids.push("me");
   return ids;
 }
@@ -244,6 +245,74 @@ setInterval(() => {
     el.textContent = (h > 0 ? h + ":" : "") + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
   });
 }, 1000);
+
+/* ── 알림 엔진 ─────────────────────────── */
+const PLATFORM_FEE_RATE = 0.05; // 참여가의 5%, 최소 1,000 · 최대 5,000
+function platformFee(price) {
+  return Math.min(5000, Math.max(1000, Math.round((price * PLATFORM_FEE_RATE) / 100) * 100));
+}
+function fmtAgo(t) {
+  const s = (Date.now() - t) / 1000;
+  if (s < 60) return "방금 전";
+  if (s < 3600) return Math.floor(s / 60) + "분 전";
+  if (s < 86400) return Math.floor(s / 3600) + "시간 전";
+  return Math.floor(s / 86400) + "일 전";
+}
+function unseenNotifs() { return Math.max(0, S.notifs.length - S.notifSeen); }
+function askNotifPerm() {
+  try { if (window.Notification && Notification.permission === "default") Notification.requestPermission(); } catch (e) {}
+}
+function notif(title, body, icon = "ph-bell", route = "#/alerts") {
+  S.notifs.unshift({ title, body, icon, route, t: Date.now() });
+  if (S.notifs.length > 30) S.notifs.length = 30;
+  Store.save();
+  toast(title, "bell-ringing");
+  try {
+    if (window.Notification && Notification.permission === "granted" && S.set.nJoin) {
+      new Notification("라스트티", { body: `${title} ${body}`, icon: "./icons/icon-192.png" });
+    }
+  } catch (e) {}
+  const h = location.hash || "#/home";
+  if (h === "#/alerts" || h === "#/home" || h === route) render();
+}
+
+/* 승인 대기·신청 시뮬레이션 스위퍼 (데모: 서버 푸시 대체) */
+function sweep() {
+  const now = Date.now();
+  let changed = false;
+  S.pending = S.pending.filter(item => {
+    if (now < item.due) return true;
+    const p = postById(item.id);
+    changed = true;
+    if (p && !S.joined.includes(item.id)) {
+      S.joined.push(item.id);
+      const h = personOf(p.hostId);
+      const c = courseById(p.courseId);
+      notif("참여가 확정됐어요", `${h ? h.name : "호스트"}님이 승인했어요. ${c.name} ${dayLabel(p)} ${teeStr(p)}`, "ph-check-circle", "#/post/" + item.id);
+    }
+    return false;
+  });
+  S.reqPlan = S.reqPlan.filter(r => {
+    if (now < r.due) return true;
+    changed = true;
+    const p = postById(r.pid);
+    const h = hostById(r.hid);
+    if (p && h && slotsLeft(p) > 0 && !joinerIds(p).includes(r.hid)) {
+      if (p.instant) {
+        if (!S.extraJoiners[r.pid]) S.extraJoiners[r.pid] = [];
+        S.extraJoiners[r.pid].push(r.hid);
+        notif("새 참여 확정", `${h.name}님이 내 모집에 바로 참여했어요.`, "ph-user-plus", "#/post/" + r.pid);
+      } else {
+        if (!S.reqs[r.pid]) S.reqs[r.pid] = [];
+        S.reqs[r.pid].push({ hid: r.hid, status: "pending", t: now });
+        notif("새 참여 신청", `${h.name}님이 참여를 신청했어요. 확인 후 승인해주세요.`, "ph-hand-waving", "#/post/" + r.pid);
+      }
+    }
+    return false;
+  });
+  if (changed) Store.save();
+}
+setInterval(sweep, 4000);
 
 /* ── 채팅 데이터 ────────────────────────── */
 const pendingReply = {};
@@ -546,7 +615,7 @@ function renderHome() {
           <div class="hero-acts">
             <button class="hero-bell" onclick="location.hash='#/search'"><i class="ph-bold ph-magnifying-glass"></i></button>
             <button class="hero-bell" onclick="location.hash='#/chat'"><i class="ph-fill ph-chat-circle-dots"></i>${unread ? '<span class="badge red"></span>' : ""}</button>
-            <button class="hero-bell" onclick="location.hash='#/alerts'"><i class="ph-fill ph-bell"></i><span class="badge"></span></button>
+            <button class="hero-bell" onclick="location.hash='#/alerts'"><i class="ph-fill ph-bell"></i>${unseenNotifs() ? '<span class="badge red"></span>' : ""}</button>
           </div>
         </div>
         <h1><span class="hl" style="animation-delay:.05s">${nickname},</span><br><span class="hl" style="animation-delay:.16s">지금 <em>빈자리 ${open.length}개</em>가</span><br><span class="hl" style="animation-delay:.27s">기다리고 있어요</span></h1>
@@ -849,7 +918,9 @@ function renderPost(id) {
   const scr = isScreen(c);
   const left = slotsLeft(p);
   const joined = S.joined.includes(p.id);
+  const pendingJoin = S.pending.some(x => x.id === p.id);
   const mine = p.hostId === "me";
+  const myReqs = mine ? (S.reqs[p.id] || []).filter(r => r.status === "pending") : [];
   const js = joinerIds(p);
   const hrs = p.hours || 2;
   const night = teeDate(p).getHours() >= 18 || teeDate(p).getHours() < 6;
@@ -903,6 +974,19 @@ function renderPost(id) {
         <div class="fee-row total"><span>라스트티 참여가</span><b>${won(p.price)}</b></div>
         <div style="margin-top:10px;font-size:12px;color:var(--ink-3);font-weight:600;display:flex;align-items:center;gap:6px"><i class="ph-fill ph-bank"></i>결제: 현장결제 또는 계좌이체 중 선택</div>
       </div>
+
+      ${myReqs.length ? `
+      <div class="d-card in" style="border:1.5px solid var(--lime)">
+        <h3><i class="ph-fill ph-hand-waving"></i>참여 신청 <span class="tag red" style="margin-left:2px">${myReqs.length}건 대기</span></h3>
+        ${myReqs.map(r => { const h = hostById(r.hid); return `
+        <div class="joiner-row">
+          ${avat(h)}
+          <div style="flex:1;min-width:0"><div class="jr-name">${h.name}</div>
+          <div class="jr-sub">${h.career} · 평균 ${h.avg}타 · 그린지수 ${h.temp.toFixed(1)}</div></div>
+          <button class="btn btn-primary btn-sm" style="flex:none" onclick="approveReq('${p.id}','${r.hid}',1)">승인</button>
+          <button class="btn btn-ghost btn-sm" style="flex:none" onclick="approveReq('${p.id}','${r.hid}',0)">거절</button>
+        </div>`; }).join("")}
+      </div>` : ""}
 
       <div class="d-card in">
         <h3><i class="ph-fill ph-users-three"></i>이 팀의 멤버 <span style="color:var(--red);font-size:13px">· ${left}자리 남음</span></h3>
@@ -973,10 +1057,34 @@ function renderPost(id) {
       ? `<button class="btn btn-danger" onclick="closeMyPost('${p.id}')">모집 마감하기</button>`
       : joined
         ? `<button class="btn btn-ghost" onclick="cancelJoin('${p.id}')">참여 취소</button>`
-        : `<button class="btn btn-primary" ${left === 0 ? "disabled" : ""} onclick="askJoin('${p.id}')">${left === 0 ? "마감됐어요" : p.instant ? "바로 참여 확정하기" : "참여 신청하기"}</button>`}
+        : pendingJoin
+          ? `<button class="btn btn-ghost" onclick="cancelPending('${p.id}')"><i class="ph-fill ph-hourglass-medium"></i>승인 대기 중 · 취소하기</button>`
+          : `<button class="btn btn-primary" ${left === 0 ? "disabled" : ""} onclick="askJoin('${p.id}')">${left === 0 ? "마감됐어요" : p.instant ? "바로 참여 확정하기" : "참여 신청하기"}</button>`}
   </div>`;
   stagger();
 }
+window.cancelPending = id => {
+  S.pending = S.pending.filter(x => x.id !== id);
+  Store.save();
+  toast("신청을 취소했어요. 수수료는 부과되지 않아요");
+  renderPost(id);
+};
+window.approveReq = (pid, hid, ok) => {
+  const list = S.reqs[pid] || [];
+  const r = list.find(x => x.hid === hid && x.status === "pending");
+  if (!r) return;
+  r.status = ok ? "approved" : "rejected";
+  if (ok) {
+    if (!S.extraJoiners[pid]) S.extraJoiners[pid] = [];
+    S.extraJoiners[pid].push(hid);
+    const h = hostById(hid);
+    notif("참여자 확정", `${h.name}님과의 라운드가 확정됐어요. 채팅으로 인사를 나눠보세요.`, "ph-check-circle", "#/post/" + pid);
+  } else {
+    toast("신청을 거절했어요");
+  }
+  Store.save();
+  renderPost(pid);
+};
 
 window.sharePost = id => {
   const p = postById(id); const c = courseById(p.courseId);
@@ -1018,24 +1126,64 @@ window.askJoin = id => {
       <div style="background:var(--bg);border-radius:14px;padding:12px;margin-top:8px;font-size:12.5px;color:var(--ink-2);font-weight:600;text-align:left;line-height:1.6">
         티오프 24시간 전까지 무료 취소돼요.<br>호스트에게 회원님의 프로필과 그린지수가 공개돼요.
       </div>
-      <button class="btn btn-primary" style="margin-top:16px" onclick="doJoin('${p.id}')">${p.instant ? "참여 확정" : "신청 보내기"}</button>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="feeConfirm('${p.id}')">${p.instant ? "다음: 수수료 확인" : "다음: 수수료 확인"}</button>
       <button class="btn btn-ghost" style="margin-top:8px" onclick="closeSheet()">다시 볼게요</button>
     </div>
   `);
 };
+
+/* 플랫폼 수수료 안내 + 최종 확인 (2단계) */
+window.feeConfirm = id => {
+  const p = postById(id);
+  if (!p) return;
+  const c = courseById(p.courseId);
+  const fee = platformFee(p.price);
+  openSheet(`
+    <div style="text-align:center;padding:6px 0 2px">
+      <div class="sheet-ic"><i class="ph-fill ph-receipt"></i></div>
+      <div style="font-size:19px;font-weight:900;margin-top:12px">마지막으로 확인해주세요</div>
+      <p style="font-size:13px;color:var(--ink-2);margin-top:6px;font-weight:500">${c.name} · ${dayLabel(p)} ${teeStr(p)}</p>
+    </div>
+    <div style="margin-top:14px">
+      <div class="fee-row"><span>참여가 (호스트 정산)</span><b>${won(p.price)}</b></div>
+      <div class="fee-row"><span>플랫폼 수수료 (5%)</span><b>${won(fee)}</b></div>
+      <div class="fee-row total"><span>총 부담 금액</span><b>${won(p.price + fee)}</b></div>
+    </div>
+    <div style="margin-top:14px;background:var(--bg);border-radius:14px;padding:13px 14px;font-size:12.5px;color:var(--ink-2);font-weight:600;line-height:1.65">
+      <b style="display:block;margin-bottom:5px;color:var(--ink)">수수료는 이렇게 쓰여요</b>
+      · 본인인증과 그린지수 기반 안전한 매칭 운영<br>
+      · 노쇼 발생 시 보상 지원과 분쟁 조정<br>
+      · 참여 취소 시 수수료도 전액 함께 취소돼요
+      ${p.instant ? "" : "<br>· 승인제 모집은 <b>호스트 승인 시점</b>에 확정돼요"}
+    </div>
+    <button class="btn btn-primary" style="margin-top:16px" onclick="doJoin('${p.id}')">${p.instant ? won(p.price + fee) + " 확정하기" : "신청 보내기"}</button>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="closeSheet()">취소</button>
+  `);
+};
 window.doJoin = id => {
   const p = postById(id);
-  if (!S.joined.includes(id)) S.joined.push(id);
   S.payPref = joinPay || "onsite";
-  Store.save();
   closeSheet();
+  askNotifPerm();
+  if (!p.instant) {
+    // 승인제: 호스트 승인 대기
+    if (!S.pending.some(x => x.id === id) && !S.joined.includes(id)) {
+      S.pending.push({ id, due: Date.now() + 9000 + Math.random() * 9000 });
+    }
+    Store.save();
+    toast("신청 완료! 호스트가 승인하면 알림으로 알려드려요");
+    renderPost(id);
+    return;
+  }
+  if (!S.joined.includes(id)) S.joined.push(id);
+  Store.save();
   if (joinPay === "transfer" && p.hostId !== "me" && hostById(p.hostId)) {
     const h = hostById(p.hostId);
     if (!S.chats[p.hostId]) S.chats[p.hostId] = [];
     scheduleReply(p.hostId, `참여 확정 감사합니다! 캐디피와 카트비 정산 계좌는 라운드 당일 안내드릴게요. 그린피는 골프장 프론트에서 결제하시면 됩니다. 당일 뵐게요, ${h.name}입니다.`);
-    toast(p.instant ? "참여 확정! 정산 안내가 채팅으로 도착해요" : "신청 완료! 호스트 승인을 기다려주세요");
+    toast("참여 확정! 정산 안내가 채팅으로 도착해요");
   } else {
-    toast(p.instant ? "참여 확정! 예정 라운드에 추가했어요" : "신청 완료! 호스트 승인을 기다려주세요");
+    toast("참여 확정! 예정 라운드에 추가했어요");
   }
   renderPost(id);
 };
@@ -1163,7 +1311,7 @@ function renderCourse(id) {
 /* ── 모집 올리기 ────────────────────────── */
 function renderNew() {
   if (!S.user) { toast("모집을 올리려면 프로필이 필요해요", "user-circle-plus"); location.hash = "#/signup"; return; }
-  const st = { kind: "field", courseId: COURSES[0].id, day: 0, tee: "07:30", holes: 18, hours: 2, slots: 1, normal: 280000, price: 170000, tags: [], level: "누구나", memo: "", pay: "onsite" };
+  const st = { kind: "field", courseId: COURSES[0].id, day: 0, tee: "07:30", holes: 18, hours: 2, slots: 1, normal: 280000, price: 170000, tags: [], level: "누구나", memo: "", pay: "onsite", confirm: "instant" };
   const venueOpts = kind => {
     const list = COURSES.filter(c => kind === "screen" ? isScreen(c) : !isScreen(c));
     return REGIONS.slice(1).map(r => {
@@ -1224,6 +1372,13 @@ function renderNew() {
     </div>
     <div id="np-pay-hint" class="hidden" style="margin-top:9px;font-size:12.5px;color:var(--ink-2);font-weight:600;background:var(--card);border:1.5px dashed var(--line);border-radius:14px;padding:12px 14px"></div>
 
+    <label class="f-label">확정 방식</label>
+    <div class="seg" id="np-confirm">
+      <button class="on" data-v="instant"><i class="ph-fill ph-lightning"></i> 즉시확정</button>
+      <button data-v="approve"><i class="ph-fill ph-hand-waving"></i> 승인제</button>
+    </div>
+    <p style="margin-top:8px;font-size:12px;color:var(--ink-3);font-weight:600">승인제는 신청이 오면 알림을 받고, 프로필을 확인한 뒤 직접 승인해요.</p>
+
     <label class="f-label">참여 조건</label>
     <div class="seg" id="np-level">${["누구나", "100타 이내", "90타 이내"].map(l => `<button class="${l === "누구나" ? "on" : ""}" data-v="${l}">${l}</button>`).join("")}</div>
 
@@ -1250,7 +1405,7 @@ function renderNew() {
       } else hint.classList.add("hidden");
     }
   });
-  seg("#np-holes", "holes", true); seg("#np-hours", "hours", true); seg("#np-slots", "slots", true); seg("#np-level", "level"); seg("#np-pay", "pay");
+  seg("#np-holes", "holes", true); seg("#np-hours", "hours", true); seg("#np-slots", "slots", true); seg("#np-level", "level"); seg("#np-pay", "pay"); seg("#np-confirm", "confirm");
 
   /* 캘린더 (오늘부터 60일) */
   const today0 = new Date(BOOT.getFullYear(), BOOT.getMonth(), BOOT.getDate());
@@ -1360,13 +1515,17 @@ function renderNew() {
     const post = {
       id: "mp" + Date.now(), courseId: st.courseId, hostId: "me", day: st.day, tee: st.tee,
       holes: st.holes, total: 4, joiners: ["me"], normal: st.normal, price: st.price,
-      reason: "일행 취소", instant: true, level: st.level, tags: st.tags.length ? st.tags : ["매너중시"],
+      reason: "일행 취소", instant: st.confirm === "instant", level: st.level, tags: st.tags.length ? st.tags : ["매너중시"],
       genderPref: "무관", memo: st.memo, ago: "방금 전", pay: st.pay,
     };
     if (st.kind === "screen") post.hours = st.hours;
     S.myPosts.push(post);
+    // 데모: 다른 골퍼의 신청/참여가 잠시 뒤 도착 (실서비스에선 서버 푸시)
+    const pool = HOSTS.slice().sort(() => Math.random() - 0.5).slice(0, Math.min(2, st.slots + 1));
+    pool.forEach((h, i) => S.reqPlan.push({ pid: post.id, hid: h.id, due: Date.now() + 18000 + i * 25000 + Math.random() * 15000 }));
     Store.save();
-    toast("모집이 올라갔어요! 신청이 오면 알려드릴게요");
+    askNotifPerm();
+    toast("모집이 올라갔어요! 신청이 오면 알림으로 알려드려요");
     location.hash = "#/post/" + post.id;
   });
 }
@@ -1564,6 +1723,7 @@ function renderMe() {
   }
   const u = S.user;
   const upcoming = S.joined.map(postById).filter(Boolean).filter(p => teeDate(p) > new Date(Date.now() - 6 * 3600e3)).sort((a, b) => teeDate(a) - teeDate(b));
+  const waiting = S.pending.map(x => postById(x.id)).filter(Boolean);
   const myPosts = S.myPosts.filter(p => !S.closed.includes(p.id));
   const saved = S.joined.map(postById).filter(Boolean).reduce((s, p) => s + (p.normal - p.price), 0);
   const unread = unreadTotal();
@@ -1600,6 +1760,13 @@ function renderMe() {
           <span class="tag green">확정</span>
         </div>`; }).join("")
         : `<div class="empty" style="padding:30px"><b>아직 예정된 라운드가 없어요</b><p>지금 열린 모집을 둘러보세요!</p><button class="btn btn-lime btn-sm" style="margin:14px auto 0" onclick="location.hash='#/home'">빈자리 보러가기</button></div>`}
+      ${waiting.map(p => { const c = courseById(p.courseId); const d = teeDate(p); return `
+        <div class="hist-card in" onclick="location.hash='#/post/${p.id}'" style="opacity:.75">
+          <div class="hist-date"><b>${d.getDate()}</b><span>${d.getMonth() + 1}월 ${DOW[d.getDay()]}</span></div>
+          <div style="flex:1"><b style="font-size:15px">${c.name}</b>
+            <div style="font-size:12px;color:var(--ink-3);font-weight:600;margin-top:3px">${teeStr(p)} 티오프 · ${won(p.price)}</div></div>
+          <span class="tag" style="background:#FFF4D6;color:#9A6700"><i class="ph-fill ph-hourglass-medium"></i>승인 대기</span>
+        </div>`; }).join("")}
     </div>
 
     ${myPosts.length ? `
@@ -1667,13 +1834,23 @@ function renderUser(id) {
 
 /* ── 알림 ─────────────────────────────── */
 function renderAlerts() {
+  const dyn = S.notifs.map(n => `
+    <div class="notif-row in" onclick="location.hash='${n.route || "#/home"}'" style="cursor:pointer;border-left:3px solid var(--lime)">
+      <div class="ic"><i class="ph-fill ${n.icon}"></i></div>
+      <div><b>${n.title}</b><p>${n.body}</p><span>${fmtAgo(n.t)}</span></div>
+    </div>`).join("");
   appEl.innerHTML = `
   <div class="view">
-    <div class="page-head"><button class="back" onclick="history.back()"><i class="ph-bold ph-arrow-left"></i></button><h1>알림</h1></div>
+    <div class="page-head"><button class="back" onclick="history.back()"><i class="ph-bold ph-arrow-left"></i></button><h1>알림</h1>
+      ${window.Notification && Notification.permission !== "granted" ? `<button class="tag lime" style="margin-left:auto;border:0" onclick="askNotifPerm();toast('브라우저 알림 권한을 요청했어요','bell')"><i class="ph-fill ph-bell-ringing"></i>기기 알림 켜기</button>` : ""}
+    </div>
     <div class="px" style="margin-top:8px">
+      ${dyn}
       ${NOTIFS.map(n => `<div class="notif-row in"><div class="ic"><i class="ph-fill ${n.icon}"></i></div><div><b>${n.title}</b><p>${n.body}</p><span>${n.when}</span></div></div>`).join("")}
     </div>
   </div>`;
+  S.notifSeen = S.notifs.length;
+  Store.save();
   stagger();
 }
 
@@ -1752,6 +1929,7 @@ window.tglSet = (key, el) => {
   Store.save();
   el.classList.toggle("on", S.set[key]);
   if (key === "dark") applyTheme();
+  if (key.startsWith("n") && S.set[key]) askNotifPerm();
 };
 function renderSettings() {
   appEl.innerHTML = `
