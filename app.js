@@ -8,7 +8,7 @@ const appEl = $("#app");
 const won = n => "₩" + Math.round(n).toLocaleString("ko-KR");
 const BOOT = new Date();
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-const VERSION = "1.6.0";
+const VERSION = "1.6.1";
 
 /* 전국 디렉토리(venues.js) 항목 → 코스 객체 (dv{index} id) */
 const DIRV = typeof DIR_VENUES !== "undefined" ? DIR_VENUES : [];
@@ -175,6 +175,18 @@ function courseArt(course, variant = 0) {
 }
 
 /* ── 공통 UI ───────────────────────────── */
+/* 뒤로가기: 히스토리를 새로 쌓지 않고 복귀, 진입 히스토리가 없으면 폴백 */
+window.goBack = fb => {
+  const before = location.hash;
+  history.back();
+  setTimeout(() => {
+    if (location.hash === before) {
+      if (before === (fb || "#/home")) render();
+      else location.hash = fb || "#/home";
+    }
+  }, 280);
+};
+
 let toastTimer;
 function toast(msg, icon = "check-circle") {
   const t = $("#toast");
@@ -1635,7 +1647,7 @@ function renderChatList() {
   });
   appEl.innerHTML = `
   <div class="view">
-    <div class="page-head"><button class="back" onclick="history.back()"><i class="ph-bold ph-arrow-left"></i></button><h1>메시지</h1></div>
+    <div class="page-head"><button class="back" onclick="goBack('#/home')"><i class="ph-bold ph-arrow-left"></i></button><h1>메시지</h1></div>
     <div class="px" style="margin-top:8px">
       ${hids.length ? hids.map(hid => {
         const h = hostById(hid);
@@ -1666,7 +1678,7 @@ function renderThread(hid) {
   appEl.innerHTML = `
   <div class="view thread">
     <div class="thread-head">
-      <button class="back" style="width:36px;height:36px;border-radius:12px;background:var(--card);box-shadow:var(--shadow-sm);display:flex;align-items:center;justify-content:center;flex:none" onclick="location.hash='#/chat'"><i class="ph-bold ph-arrow-left"></i></button>
+      <button class="back" style="width:36px;height:36px;border-radius:12px;background:var(--card);box-shadow:var(--shadow-sm);display:flex;align-items:center;justify-content:center;flex:none" onclick="goBack('#/chat')"><i class="ph-bold ph-arrow-left"></i></button>
       ${avat(h)}
       <div style="flex:1;min-width:0"><div class="th-name">${h.name}</div><div class="th-sub">그린지수 ${h.temp.toFixed(1)} · ${h.career} · 보통 10분 내 응답</div></div>
       <button style="font-size:20px;color:var(--ink-3)" onclick="location.hash='#/user/${hid}'"><i class="ph ph-user-circle"></i></button>
