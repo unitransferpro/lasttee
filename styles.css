@@ -284,6 +284,27 @@ body.dark .nb-tile{filter:invert(.92) hue-rotate(180deg) saturate(.4) brightness
 .nb-zoom button{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.9);color:#0C1F16;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.18);backdrop-filter:blur(6px)}
 body.dark .nb-zoom button{background:rgba(24,35,27,.9);color:#ECF2EC}
 
+/* ── 줌 가능한 전국 지도 (슬리피 맵) ───────── */
+.bm-wrap{position:relative;border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow)}
+#big-map{position:relative;width:100%;height:490px;background:#DCE7DB;overflow:hidden;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+#big-map:active{cursor:grabbing}
+body.dark #big-map{background:#1C2820}
+.bm-layer{position:absolute;inset:0;will-change:transform}
+.bm-tile{position:absolute;width:256px;height:256px;pointer-events:none;-webkit-user-drag:none}
+body.dark .bm-tile{filter:invert(.92) hue-rotate(180deg) saturate(.4) brightness(.9)}
+.bm-dot{position:absolute;transform:translate(-50%,-50%);border-radius:50%;background:#7CB342;border:1.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);padding:0;z-index:2}
+.bm-dot::after{content:"";position:absolute;inset:-9px}
+.bm-dot.scr{background:#4D8DE8}
+.bm-dot.rng{background:#9C6ADE}
+.bm-m{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px;z-index:3;padding:0}
+.bm-d{border-radius:50%;background:#7CB342;border:1.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.bm-d.scr{background:#4D8DE8}
+.bm-d.rng{background:#9C6ADE}
+.bm-name{font-size:10px;font-weight:800;color:#12281B;background:rgba(255,255,255,.88);padding:2px 6px;border-radius:7px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.18);max-width:120px;overflow:hidden;text-overflow:ellipsis}
+body.dark .bm-name{background:rgba(18,28,21,.88);color:#E8F0E8}
+#big-map .pin{z-index:4}
+.bm-hint{position:absolute;left:12px;top:12px;background:rgba(7,36,24,.72);color:#fff;font-size:10.5px;font-weight:700;padding:6px 10px;border-radius:9px;z-index:5;backdrop-filter:blur(4px);pointer-events:none}
+
 /* ── 전국 검색 ─────────────────────────── */
 .s-row{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:16px;padding:13px 14px;box-shadow:var(--shadow-sm);margin-bottom:9px;transition:transform .15s;cursor:pointer}
 .s-row:active{transform:scale(.98)}
@@ -575,3 +596,5 @@ body.dark .notif-row .ic{color:var(--lime)}
 
 @media(min-width:521px){body{box-shadow:0 0 60px rgba(0,0,0,.15)}}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+.s-ic.rng{background:#EDE4FB;color:#6B3FC9}
+body.dark .s-ic.rng{background:#2B2140;color:#C6A9F5}

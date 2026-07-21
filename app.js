@@ -8,7 +8,7 @@ const appEl = $("#app");
 const won = n => "₩" + Math.round(n).toLocaleString("ko-KR");
 const BOOT = new Date();
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-const VERSION = "1.4.1";
+const VERSION = "1.5.0";
 
 /* 전국 디렉토리(venues.js) 항목 → 코스 객체 (dv{index} id) */
 const DIRV = typeof DIR_VENUES !== "undefined" ? DIR_VENUES : [];
@@ -16,16 +16,17 @@ const dirCourse = i => {
   const v = DIRV[i];
   if (!v) return null;
   const scr = v.k === "s";
+  const rng = v.k === "r";
   const city = v.a ? v.a.split(" ").slice(0, 2).join(" ") : (v.c || v.r);
   return {
-    id: "dv" + i, dir: true, kind: scr ? "screen" : undefined, approx: !!v.x || !v.lat,
+    id: "dv" + i, dir: true, kind: scr ? "screen" : undefined, approx: !!v.x || !v.lat, rng,
     name: v.n, eng: "", region: v.r, city, addr: v.a || v.c || "",
     lat: v.lat, lng: v.lng, holes: v.h || 18, par: 72, len: "",
     rating: 0, ratingN: 0, green: null, caddy: 0, cart: 0, room: null,
-    type: v.t || (scr ? "스크린" : "골프장"), rooms: 0, hoursOpen: "",
+    type: v.t || (scr ? "스크린" : rng ? "연습장" : "골프장"), rooms: 0, hoursOpen: "",
     brandShort: v.n.includes("골프존") ? "골프존" : v.n.includes("프렌즈") ? "카카오VX" : (v.n.includes("티업") || v.n.toUpperCase().includes("SG")) ? "SG골프" : "골프존",
-    brand: "", game: 0, practice: 0, tags: v.t ? [v.t] : [], facilities: [], hue: scr ? 195 : 140,
-    desc: `전국 디렉토리에 등록된 ${scr ? "스크린골프 매장" : v.t ? v.t + " 골프장" : "골프장"}입니다. 정확한 요금과 예약 정보는 네이버 지도에서 확인하세요.`,
+    brand: "", game: 0, practice: 0, tags: v.t ? [v.t] : [], facilities: [], hue: scr ? 195 : rng ? 260 : 140,
+    desc: `전국 디렉토리에 등록된 ${scr ? "스크린골프 매장" : rng ? "골프연습장" : v.t ? v.t + " 골프장" : "골프장"}입니다. 정확한 요금과 예약 정보는 네이버 지도에서 확인하세요.`,
   };
 };
 const courseById = id => (id && id.startsWith && id.startsWith("dv")) ? dirCourse(+id.slice(2)) : COURSES.find(c => c.id === id);
@@ -211,6 +212,16 @@ function countUp(el, target, { prefix = "", suffix = "", dur = 900 } = {}) {
 /* 스크롤 리빌 */
 const rvIO = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("vis"); rvIO.unobserve(e.target); } }), { threshold: 0.12 });
 function bindRv() { $$(".rv").forEach(el => rvIO.observe(el)); }
+
+/* 뷰포트 리사이즈 → 지도 재계산 */
+let _rsT;
+window.addEventListener("resize", () => {
+  clearTimeout(_rsT);
+  _rsT = setTimeout(() => {
+    if ($("#big-map")) mountBigMap();
+    if ($("#nb-map")) mountNearbyMap();
+  }, 220);
+});
 
 /* 히어로 패럴랙스 */
 window.addEventListener("scroll", () => {
@@ -637,7 +648,149 @@ function renderHome() {
 }
 
 /* ── 지도 뷰 ───────────────────────────── */
-let mapState = { kind: "전체" };
+let mapState = { kind: "전체", lat: 36.15, lng: 127.85, z: 7 };
+let _bmAll = null;
+function bmMarkers() {
+  if (_bmAll) return _bmAll;
+  _bmAll = [];
+  COURSES.forEach(c => {
+    const g = geoOf(c.id);
+    if (!g) return;
+    _bmAll.push({ id: c.id, name: c.name, lat: g.lat, lng: g.lng, scr: isScreen(c), rng: false, cur: true });
+  });
+  DIRV.forEach((v, i) => {
+    if (!v.lat) return;
+    _bmAll.push({ id: "dv" + i, name: v.n, lat: v.lat, lng: v.lng, scr: v.k === "s", rng: v.k === "r", cur: false });
+  });
+  return _bmAll;
+}
+function bmClamp() {
+  mapState.lat = Math.max(32.6, Math.min(39.3, mapState.lat));
+  mapState.lng = Math.max(124.3, Math.min(131.6, mapState.lng));
+  mapState.z = Math.max(6, Math.min(16, mapState.z));
+}
+function mountBigMap() {
+  const box = $("#big-map");
+  if (!box) return;
+  bmClamp();
+  const w = box.clientWidth, h = box.clientHeight;
+  if (w < 60 || h < 60) { requestAnimationFrame(() => mountBigMap()); return; }
+  const z = mapState.z;
+  const [xf, yf] = tileXY(mapState.lat, mapState.lng, z);
+  const cx = xf * 256, cy = yf * 256;
+  const maxT = 2 ** z;
+  let html = "";
+  const tx0 = Math.floor((cx - w / 2) / 256), tx1 = Math.floor((cx + w / 2) / 256);
+  const ty0 = Math.floor((cy - h / 2) / 256), ty1 = Math.floor((cy + h / 2) / 256);
+  for (let tx = tx0; tx <= tx1; tx++) for (let ty = ty0; ty <= ty1; ty++) {
+    if (ty < 0 || ty >= maxT) continue;
+    const left = tx * 256 - (cx - w / 2), top = ty * 256 - (cy - h / 2);
+    const sub = "abcd"[Math.abs(tx + ty) % 4];
+    html += `<img class="bm-tile" style="left:${left}px;top:${top}px" src="https://${sub}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${((tx % maxT) + maxT) % maxT}/${ty}@2x.png" alt="">`;
+  }
+  // 줌 레벨별 점진 표시(LOD): 확대할수록 더 많은 점 + 이름
+  const dotPx = z <= 8 ? 6 : z <= 10 ? 9 : z <= 12 ? 12 : 15;
+  const K = mapState.kind;
+  let shown = 0, pinsHtml = "";
+  for (const m of bmMarkers()) {
+    if (K === "필드" && (m.scr || m.rng)) continue;
+    if (K === "스크린" && !m.scr) continue;
+    if (K === "연습장" && !m.rng) continue;
+    if (K === "전체" && m.rng && z < 11) continue; // 연습장은 동네 줌부터
+    const [vx, vy] = tileXY(m.lat, m.lng, z);
+    const px = vx * 256 - (cx - w / 2), py = vy * 256 - (cy - h / 2);
+    if (px < -50 || px > w + 50 || py < -50 || py > h + 50) continue;
+    shown++;
+    const posts = postsForCourse(m.id).length;
+    if (posts > 0) {
+      pinsHtml += `<button class="pin ${m.scr ? "pin-scr" : ""}" style="left:${px}px;top:${py}px" onclick="bmTap('${m.id}')">
+        <span class="pin-dot"><i class="ph-fill ${m.scr ? "ph-monitor-play" : "ph-golf"}"></i></span>
+        <span class="pin-n">${m.name.split(" ")[0]} · ${posts}</span></button>`;
+      continue;
+    }
+    const label = (m.cur && z >= 9) || z >= 11;
+    if (label) {
+      html += `<button class="bm-m" style="left:${px}px;top:${py}px" onclick="bmTap('${m.id}')">
+        <span class="bm-d ${m.scr ? "scr" : m.rng ? "rng" : ""}" style="width:${dotPx}px;height:${dotPx}px"></span>
+        <span class="bm-name">${m.name}</span></button>`;
+    } else {
+      html += `<button class="bm-dot ${m.scr ? "scr" : m.rng ? "rng" : ""}" style="left:${px}px;top:${py}px;width:${dotPx}px;height:${dotPx}px" onclick="bmTap('${m.id}')" aria-label="${m.name}"></button>`;
+    }
+  }
+  html += pinsHtml;
+  box.innerHTML = `<div class="bm-layer" id="bm-layer">${html}</div>
+    <div class="bm-hint">${shown.toLocaleString()}곳 표시${z < 11 ? " · 확대하면 이름이 보여요" : ""}</div>
+    <div class="nb-attr">지도 © OpenStreetMap · CARTO</div>`;
+}
+window.bmTap = id => {
+  const box = $("#big-map");
+  if (box && box._sup && Date.now() - box._sup < 400) return;
+  pinSheet(id);
+};
+window.bmZoom = d => { mapState.z += d; mountBigMap(); };
+window.bmLocate = () => {
+  if (!navigator.geolocation) { toast("위치를 사용할 수 없어요", "warning"); return; }
+  navigator.geolocation.getCurrentPosition(p => {
+    mapState.lat = p.coords.latitude; mapState.lng = p.coords.longitude;
+    mapState.z = Math.max(mapState.z, 11);
+    mountBigMap();
+    toast("내 주변으로 이동했어요", "crosshair");
+  }, () => toast("위치 권한이 필요해요", "warning"), { timeout: 5000 });
+};
+function bindBigMap() {
+  const box = $("#big-map");
+  if (!box || box._bound) return;
+  box._bound = true;
+  const ptrs = new Map();
+  let start = null, pinchD = 0;
+  const layer = () => $("#bm-layer");
+  box.addEventListener("pointerdown", e => {
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    box.setPointerCapture(e.pointerId);
+    if (ptrs.size === 1) start = { x: e.clientX, y: e.clientY, dx: 0, dy: 0, moved: false };
+    if (ptrs.size === 2) {
+      const [a, b] = [...ptrs.values()];
+      pinchD = Math.hypot(a.x - b.x, a.y - b.y);
+      start = null;
+      const l = layer(); if (l) l.style.transform = "";
+    }
+  });
+  box.addEventListener("pointermove", e => {
+    if (!ptrs.has(e.pointerId)) return;
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (ptrs.size === 2 && pinchD) {
+      const [a, b] = [...ptrs.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (d > pinchD * 1.3) { bmZoom(1); pinchD = d; box._sup = Date.now(); }
+      else if (d < pinchD * 0.75) { bmZoom(-1); pinchD = d; box._sup = Date.now(); }
+      return;
+    }
+    if (!start) return;
+    start.dx = e.clientX - start.x; start.dy = e.clientY - start.y;
+    if (Math.hypot(start.dx, start.dy) > 5) start.moved = true;
+    const l = layer(); if (l) l.style.transform = `translate(${start.dx}px,${start.dy}px)`;
+  });
+  const end = e => {
+    ptrs.delete(e.pointerId);
+    if (ptrs.size < 2) pinchD = 0;
+    if (!start) return;
+    if (start.moved) {
+      box._sup = Date.now();
+      const z = mapState.z, scale = 256 * 2 ** z;
+      const [xf, yf] = tileXY(mapState.lat, mapState.lng, z);
+      const nx = xf * 256 - start.dx, ny = yf * 256 - start.dy;
+      mapState.lng = (nx / scale) * 360 - 180;
+      const n = Math.PI - (2 * Math.PI * ny) / scale;
+      mapState.lat = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+      mountBigMap();
+    }
+    start = null;
+  };
+  box.addEventListener("pointerup", end);
+  box.addEventListener("pointercancel", end);
+  box.addEventListener("wheel", e => { e.preventDefault(); bmZoom(e.deltaY < 0 ? 1 : -1); }, { passive: false });
+  box.addEventListener("dblclick", e => { e.preventDefault(); bmZoom(1); });
+}
 function renderMap() {
   const open = openPosts();
   appEl.innerHTML = `
@@ -646,16 +799,24 @@ function renderMap() {
       <span style="margin-left:auto" class="tag lime"><i class="ph-fill ph-lightning"></i>실시간 ${open.length}건</span>
     </div>
     <div class="chips" id="map-kind" style="padding-bottom:10px">
-      ${["전체", "필드", "스크린"].map(k => `<button class="chip ${mapState.kind === k ? "on" : ""}" data-k="${k}">${k === "필드" ? '<i class="ph-fill ph-golf"></i> ' : k === "스크린" ? '<i class="ph-fill ph-monitor-play"></i> ' : ""}${k}</button>`).join("")}
+      ${["전체", "필드", "스크린", "연습장"].map(k => `<button class="chip ${mapState.kind === k ? "on" : ""}" data-k="${k}">${k === "필드" ? '<i class="ph-fill ph-golf"></i> ' : k === "스크린" ? '<i class="ph-fill ph-monitor-play"></i> ' : k === "연습장" ? '<i class="ph-fill ph-barbell"></i> ' : ""}${k}</button>`).join("")}
       <button class="chip" style="margin-left:auto;background:var(--green);border-color:var(--green);color:var(--lime)" onclick="location.hash='#/nearby'"><i class="ph-fill ph-map-pin-area"></i> 동네 시세</button>
       <button class="chip" onclick="location.hash='#/search'"><i class="ph-bold ph-magnifying-glass"></i> 검색</button>
     </div>
-    <div class="px in">${koreaMap(true, mapState.kind)}</div>
+    <div class="px"><div class="bm-wrap in">
+      <div id="big-map"></div>
+      <div class="nb-zoom">
+        <button onclick="bmZoom(1)"><i class="ph-bold ph-plus"></i></button>
+        <button onclick="bmZoom(-1)"><i class="ph-bold ph-minus"></i></button>
+        <button onclick="bmLocate()"><i class="ph-bold ph-crosshair-simple"></i></button>
+      </div>
+    </div></div>
     <div class="px" style="margin-top:14px">
       <div class="d-card in" style="margin:0;padding:16px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
-        <span style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink-2)"><span style="width:12px;height:12px;border-radius:50%;background:var(--lime);display:inline-block"></span>필드</span>
-        <span style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink-2)"><span style="width:12px;height:12px;border-radius:50%;background:#8AB8FF;display:inline-block"></span>스크린</span>
-        <span style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink-2)"><span style="width:12px;height:12px;border-radius:50%;background:#57705F;display:inline-block"></span>모집 없음</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink-2)"><span style="width:12px;height:12px;border-radius:50%;background:#7CB342;display:inline-block"></span>필드</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink-2)"><span style="width:12px;height:12px;border-radius:50%;background:#4D8DE8;display:inline-block"></span>스크린</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink-2)"><span style="width:12px;height:12px;border-radius:50%;background:#9C6ADE;display:inline-block"></span>연습장</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink-2)"><i class="ph-fill ph-hand-tap" style="font-size:14px"></i>드래그 이동 · 핀치 확대</span>
       </div>
     </div>
     <div class="h-sec px"><h2>파트너 골프장 · 매장</h2></div>
@@ -670,10 +831,13 @@ function renderMap() {
     </div>
   </div>`;
   stagger();
+  requestAnimationFrame(() => { mountBigMap(); bindBigMap(); });
+  setTimeout(() => { const b = $("#big-map"); if (b && !b.querySelector(".bm-tile")) mountBigMap(); }, 400);
   $("#map-kind").addEventListener("click", e => {
-    const b = e.target.closest(".chip"); if (!b) return;
+    const b = e.target.closest(".chip"); if (!b || !b.dataset.k) return;
     mapState.kind = b.dataset.k;
-    renderMap();
+    $$("#map-kind .chip").forEach(x => x.classList.toggle("on", x === b));
+    mountBigMap();
   });
 }
 
@@ -1160,7 +1324,7 @@ function renderNew() {
   /* 전국 검색으로 골프장 선택 → select에 옵션 주입 */
   window.venuePickSheet = () => {
     const scr = st.kind === "screen";
-    const pool = allVenues().filter(v => (scr ? v.scr : !v.scr));
+    const pool = allVenues().filter(v => (scr ? v.scr : !v.scr && !v.rng));
     const rowsOf = q => {
       const qq = (q || "").trim().toLowerCase();
       return pool.filter(v => !qq || v.name.toLowerCase().includes(qq)).slice(0, 30)
@@ -1760,7 +1924,7 @@ function renderNearby() {
           <button onclick="nbZoom(-1)"><i class="ph-bold ph-minus"></i></button>
         </div>
       </div>
-      <p style="margin-top:9px;font-size:11.5px;color:var(--ink-3);font-weight:600">${D.sub} 기준 · 룸 1시간 가격이에요. 핀을 누르면 매장과 모집을 볼 수 있어요.</p>
+      <p style="margin-top:9px;font-size:11.5px;color:var(--ink-3);font-weight:600">${D.sub} 기준 · 브랜드 표준 시세로 계산한 룸 1시간 추정 요금이에요. 정확한 요금은 각 매장에서 확인하세요.</p>
     </div>
     <div class="h-sec px"><h2>이 동네 매장 ${vs.length}곳</h2><span class="more">가격 낮은 순</span></div>
     <div class="px">
@@ -1803,6 +1967,7 @@ function mountNearbyMap() {
   if (!box) return;
   const D = DISTRICTS.find(d => d.id === nearbyState.district);
   const w = box.clientWidth, h = box.clientHeight;
+  if (w < 60 || h < 60) { requestAnimationFrame(() => mountNearbyMap()); return; }
   const dvs = COURSES.filter(c => isScreen(c) && c.district === nearbyState.district);
   // 지역 매장 전체가 들어오도록 중심과 줌 자동 맞춤
   const lats = dvs.map(c => c.lat), lngs = dvs.map(c => c.lng);
@@ -1862,21 +2027,21 @@ window.nbZoom = d => {
 /* ── 전국 검색 (골프장 + 스크린 디렉토리) ── */
 let searchState = { q: "", kind: "전체", region: "전체" };
 function allVenues() {
-  const cur = COURSES.map(c => ({ id: c.id, name: c.name, region: c.region, city: c.city, scr: isScreen(c), cur: true, t: c.type }));
-  const dir = DIRV.map((v, i) => ({ id: "dv" + i, name: v.n, region: v.r, city: v.a ? v.a.split(" ").slice(0, 2).join(" ") : (v.c || v.r), scr: v.k === "s", cur: false, t: v.t || "" }));
+  const cur = COURSES.map(c => ({ id: c.id, name: c.name, region: c.region, city: c.city, scr: isScreen(c), rng: false, cur: true, t: c.type }));
+  const dir = DIRV.map((v, i) => ({ id: "dv" + i, name: v.n, region: v.r, city: v.a ? v.a.split(" ").slice(0, 2).join(" ") : (v.c || v.r), scr: v.k === "s", rng: v.k === "r", cur: false, t: v.t || "" }));
   return cur.concat(dir);
 }
 function searchRows() {
   const q = searchState.q.trim().toLowerCase();
   let list = allVenues()
-    .filter(v => searchState.kind === "전체" || (searchState.kind === "스크린" ? v.scr : !v.scr))
+    .filter(v => searchState.kind === "전체" || (searchState.kind === "스크린" ? v.scr : searchState.kind === "연습장" ? v.rng : !v.scr && !v.rng))
     .filter(v => searchState.region === "전체" || v.region === searchState.region)
     .filter(v => !q || v.name.toLowerCase().includes(q));
   const total = list.length;
   list = list.slice(0, 80);
   const rows = list.map(v => `
     <div class="s-row in" onclick="location.hash='#/course/${v.id}'">
-      <span class="s-ic ${v.scr ? "scr" : ""}"><i class="ph-fill ${v.scr ? "ph-monitor-play" : "ph-golf"}"></i></span>
+      <span class="s-ic ${v.scr ? "scr" : v.rng ? "rng" : ""}"><i class="ph-fill ${v.scr ? "ph-monitor-play" : v.rng ? "ph-barbell" : "ph-golf"}"></i></span>
       <div style="flex:1;min-width:0">
         <b>${v.name}</b>
         <div class="s-sub">${v.region}${v.city && v.city !== v.region ? " · " + v.city : ""}${v.t && !v.scr ? " · " + v.t : ""}${v.cur ? "" : ""}</div>
@@ -1899,7 +2064,7 @@ function renderSearch() {
     <div class="px"><div class="f-input in"><i class="ph-bold ph-magnifying-glass" style="color:var(--ink-3)"></i>
       <input id="s-q" placeholder="골프장 · 스크린 매장 이름 검색" value="${searchState.q}"></div></div>
     <div class="chips" id="s-kind" style="margin-top:10px;padding-bottom:2px">
-      ${["전체", "필드", "스크린"].map(k => `<button class="chip ${searchState.kind === k ? "on" : ""}" data-k="${k}">${k === "필드" ? '<i class="ph-fill ph-golf"></i> ' : k === "스크린" ? '<i class="ph-fill ph-monitor-play"></i> ' : ""}${k}</button>`).join("")}
+      ${["전체", "필드", "스크린", "연습장"].map(k => `<button class="chip ${searchState.kind === k ? "on" : ""}" data-k="${k}">${k === "필드" ? '<i class="ph-fill ph-golf"></i> ' : k === "스크린" ? '<i class="ph-fill ph-monitor-play"></i> ' : k === "연습장" ? '<i class="ph-fill ph-barbell"></i> ' : ""}${k}</button>`).join("")}
     </div>
     <div class="chips" id="s-region">
       ${REGIONS.map(r => `<button class="chip ${searchState.region === r ? "on" : ""}" data-r="${r}">${r}</button>`).join("")}
