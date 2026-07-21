@@ -8,7 +8,7 @@ const appEl = $("#app");
 const won = n => "₩" + Math.round(n).toLocaleString("ko-KR");
 const BOOT = new Date();
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-const VERSION = "1.6.1";
+const VERSION = "1.7.0";
 
 /* 전국 디렉토리(venues.js) 항목 → 코스 객체 (dv{index} id) */
 const DIRV = typeof DIR_VENUES !== "undefined" ? DIR_VENUES : [];
@@ -1295,7 +1295,7 @@ function renderCourse(id) {
         ` : `
         <p style="font-size:13.5px;color:var(--ink-2);font-weight:600;line-height:1.6">아직 요금 정보가 등록되지 않은 곳이에요. 아래 네이버 지도 버튼으로 최신 요금과 예약 정보를 확인하세요.</p>
         `}
-        <p style="margin-top:10px;font-size:11.5px;color:var(--ink-3);font-weight:600">시즌과 요일에 따라 달라질 수 있어요. 정확한 요금은 네이버 지도에서 확인하세요.</p>
+        <p style="margin-top:10px;font-size:11.5px;color:var(--ink-3);font-weight:600">일반적인 요금대 기준 <b>추정치</b>이며 시즌과 요일에 따라 달라져요. 정확한 요금은 네이버 지도에서 확인하세요.</p>
       </div>
 
       ${c.facilities.length ? `
