@@ -8,7 +8,7 @@ const appEl = $("#app");
 const won = n => "₩" + Math.round(n).toLocaleString("ko-KR");
 const BOOT = new Date();
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-const VERSION = "1.9.0";
+const VERSION = "1.9.1";
 
 /* 전국 디렉토리(venues.js) 항목 → 코스 객체 (dv{index} id) */
 const DIRV = typeof DIR_VENUES !== "undefined" ? DIR_VENUES : [];
@@ -627,9 +627,8 @@ function renderHome() {
   appEl.innerHTML = `
   <div class="view">
     <div class="hero">
-      <div class="hero-glow"></div>
       <svg class="hero-flight" viewBox="0 0 190 130"><path class="hf-path" d="M12 112 Q 95 -14 178 98"/><circle cx="178" cy="98" r="3.5" fill="#D6F94B"/></svg>
-      <div class="hf-ball" style="position:absolute;top:52px;right:0;width:190px;height:130px;pointer-events:none"><span style="offset-path:path('M12 112 Q 95 -14 178 98');offset-rotate:0deg;position:absolute;width:9px;height:9px;border-radius:50%;background:#fff;box-shadow:0 0 10px rgba(255,255,255,.8);display:block"></span></div>
+      <div class="hf-ball" style="position:absolute;top:52px;right:0;width:190px;height:130px;pointer-events:none"><span style="offset-path:path('M12 112 Q 95 -14 178 98');offset-rotate:0deg;position:absolute;width:9px;height:9px;border-radius:50%;background:#fff;display:block"></span></div>
       <div class="hero-inner">
         <div class="hero-top">
           <div class="hero-logo"><span class="dot"></span>LASTTEE</div>

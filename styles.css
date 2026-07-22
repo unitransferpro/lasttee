@@ -1,7 +1,7 @@
 /* ══════════════════ LASTTEE 라스트티 v2 ══════════════════ */
 :root{
   --bg:#F4F1E8;
-  --card:#FFFFFF;
+  --card:#FEFDF9;
   --ink:#0C1F16;
   --ink-2:#3D5247;
   --ink-3:#6F7F75;
@@ -79,12 +79,12 @@ i[class^="ph"]{line-height:1}
 .view{animation:viewIn .42s cubic-bezier(.25,1,.35,1) both}
 @keyframes viewIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 .px{padding-left:20px;padding-right:20px}
-.in{opacity:0;animation:riseIn .55s cubic-bezier(.22,1,.36,1) forwards}
+.in{opacity:0;animation:riseIn .45s cubic-bezier(.22,1,.36,1) forwards}
 @keyframes riseIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 .hidden{display:none!important}
 
 /* 스크롤 리빌 */
-.rv{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1)}
+.rv{opacity:0;transform:translateY(26px);transition:opacity .5s cubic-bezier(.22,1,.36,1),transform .5s cubic-bezier(.22,1,.36,1)}
 .rv.vis{opacity:1;transform:none}
 
 .h-sec{display:flex;align-items:baseline;justify-content:space-between;margin:30px 0 14px}
@@ -117,12 +117,10 @@ body.dark .tab.active{color:var(--lime)}
 .tab-new:active .new-btn{transform:scale(.9) rotate(90deg)}
 
 /* ── 버튼 ─────────────────────────────── */
-.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:17px;border-radius:18px;font-size:16px;font-weight:800;letter-spacing:-.01em;transition:transform .15s,opacity .2s;user-select:none;position:relative;overflow:hidden}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:16px;border-radius:18px;font-size:16px;font-weight:800;letter-spacing:-.01em;transition:transform .15s,opacity .2s;user-select:none;position:relative;overflow:hidden}
 .btn:active{transform:scale(.97)}
 .btn-primary{background:var(--green);color:var(--lime)}
 .btn-lime{background:var(--lime);color:var(--green-deep)}
-.btn-lime::after{content:"";position:absolute;top:0;bottom:0;width:46%;left:-60%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);animation:shine 3.2s 1s infinite}
-@keyframes shine{0%{left:-60%}45%{left:130%}100%{left:130%}}
 .btn-ghost{background:var(--sand);color:var(--ink)}
 .btn-danger{background:#FDEBEC;color:var(--red)}
 body.dark .btn-danger{background:#3A1B1D}
@@ -153,29 +151,27 @@ body.dark .tag.blue{background:#1B2C45;color:#8AB8FF}
 
 /* ── 홈 히어로 ─────────────────────────── */
 .hero{
+  isolation:isolate;
   background:radial-gradient(120% 90% at 85% -10%,#1A6B44 0%,var(--green) 45%,var(--green-deep) 100%);
   color:#fff;padding:58px 20px 74px;border-radius:0 0 34px 34px;position:relative;overflow:hidden;
 }
 .hero::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.055) 1px,transparent 1px);background-size:22px 22px;pointer-events:none}
-.hero-glow{position:absolute;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(214,249,75,.16),transparent 65%);top:-120px;right:-90px;animation:glowFloat 7s ease-in-out infinite;pointer-events:none}
-@keyframes glowFloat{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-24px,18px) scale(1.12)}}
 .hero-inner{position:relative}
 .hero-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px}
 .hero-logo{font-size:17px;font-weight:900;letter-spacing:.18em;color:#fff;display:flex;align-items:center;gap:8px}
-.hero-logo .dot{width:9px;height:9px;border-radius:50%;background:var(--lime);animation:pulse 2s infinite}
+.hero-logo .dot{width:9px;height:9px;border-radius:50%;background:var(--lime)}
 .hero-acts{display:flex;gap:8px}
 .hero-bell{width:42px;height:42px;border-radius:14px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:20px;position:relative;backdrop-filter:blur(6px)}
 .hero-bell .badge{position:absolute;top:9px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--lime);border:2px solid var(--green)}
 .hero-bell .badge.red{background:var(--red)}
 .hero h1{font-size:31px;font-weight:900;line-height:1.24;letter-spacing:-.03em}
 .hero h1 em{font-style:normal;color:var(--lime)}
-.hero h1 .hl{display:inline-block;animation:riseIn .7s cubic-bezier(.22,1,.36,1) both}
+.hero h1 .hl{display:inline-block;animation:riseIn .5s cubic-bezier(.22,1,.36,1) both}
 .hero-sub{margin-top:10px;font-size:14px;color:rgba(255,255,255,.65);font-weight:500}
 .hero-stats{display:flex;gap:10px;margin-top:24px}
 .hs{flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:14px 12px 12px;backdrop-filter:blur(6px)}
 .hs b{display:block;font-size:20px;font-weight:900;color:var(--lime);letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap}
 .hs span{font-size:11px;color:rgba(255,255,255,.6);font-weight:600;white-space:nowrap}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(214,249,75,.5)}50%{box-shadow:0 0 0 7px rgba(214,249,75,0)}}
 /* 히어로 볼 플라이트 */
 .hero-flight{position:absolute;right:0;top:52px;width:190px;height:130px;pointer-events:none;opacity:.9}
 .hf-path{fill:none;stroke:rgba(214,249,75,.35);stroke-width:1.6;stroke-dasharray:3 6;stroke-linecap:round}
@@ -183,7 +179,7 @@ body.dark .tag.blue{background:#1B2C45;color:#8AB8FF}
 @keyframes flight{0%{offset-distance:0%;opacity:0}8%{opacity:1}80%{offset-distance:100%;opacity:1}88%{offset-distance:100%;opacity:0}100%{offset-distance:100%;opacity:0}}
 
 /* ── 위성 사진 ─────────────────────────── */
-.sat{position:relative;overflow:hidden;background:var(--green-deep)}
+.sat{isolation:isolate;position:relative;overflow:hidden;background:var(--green-deep)}
 .sat > svg{position:absolute;inset:0;width:100%;height:100%}
 .sat img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:satIn .8s ease both}
 @keyframes satIn{from{opacity:0;transform:scale(1.06)}to{opacity:1;transform:scale(1)}}
@@ -193,7 +189,7 @@ body.dark .tag.blue{background:#1B2C45;color:#8AB8FF}
 .hot-wrap{margin-top:-46px;position:relative;z-index:2}
 .hot-scroll{display:flex;gap:14px;overflow-x:auto;padding:6px 20px 16px;scroll-snap-type:x mandatory;scrollbar-width:none}
 .hot-scroll::-webkit-scrollbar{display:none}
-.hot-card{flex:none;width:296px;scroll-snap-align:center;background:var(--card);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow);transition:transform .2s}
+.hot-card{isolation:isolate;flex:none;width:296px;scroll-snap-align:center;background:var(--card);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow);transition:transform .2s}
 .hot-card:active{transform:scale(.975)}
 .hot-art{height:132px;position:relative}
 .hot-art svg{display:block;width:100%;height:100%}
@@ -203,7 +199,7 @@ body.dark .tag.blue{background:#1B2C45;color:#8AB8FF}
 @keyframes urgentPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 .hot-off{position:absolute;top:12px;right:12px;background:var(--lime);color:var(--green-deep);font-size:13px;font-weight:900;padding:7px 10px;border-radius:10px;z-index:2}
 .hot-kind{position:absolute;bottom:10px;left:12px;background:rgba(27,95,191,.88);color:#fff;font-size:10.5px;font-weight:800;padding:5px 9px;border-radius:8px;display:flex;align-items:center;gap:4px;backdrop-filter:blur(4px);z-index:2}
-.hot-body{padding:15px 16px 17px}
+.hot-body{padding:16px}
 .hot-course{font-size:16.5px;font-weight:800;letter-spacing:-.02em}
 .hot-meta{margin-top:5px;font-size:12.5px;color:var(--ink-3);font-weight:600;display:flex;align-items:center;gap:5px}
 .hot-price{margin-top:12px;display:flex;align-items:baseline;gap:8px}
@@ -212,7 +208,7 @@ body.dark .tag.blue{background:#1B2C45;color:#8AB8FF}
 .hot-price b small{font-size:12px;font-weight:700;color:var(--ink-2)}
 
 /* ── 모집 리스트 카드 ───────────────────── */
-.post-card{background:var(--card);border-radius:var(--r-md);padding:17px;display:flex;gap:14px;box-shadow:var(--shadow-sm);margin-bottom:12px;transition:transform .18s;position:relative;overflow:hidden}
+.post-card{isolation:isolate;background:var(--card);border-radius:var(--r-md);padding:17px;display:flex;gap:14px;box-shadow:var(--shadow-sm);margin-bottom:12px;transition:transform .18s;position:relative;overflow:hidden}
 .post-card:active{transform:scale(.98)}
 .pc-art{width:78px;height:78px;border-radius:16px;overflow:hidden;flex:none;position:relative}
 .pc-art svg{display:block;width:100%;height:100%}
@@ -234,7 +230,7 @@ body.dark .tag.blue{background:#1B2C45;color:#8AB8FF}
 .mine-flag{position:absolute;top:0;right:0;background:var(--lime);color:var(--green-deep);font-size:10.5px;font-weight:900;padding:5px 12px;border-radius:0 0 0 14px;z-index:2}
 
 /* ── 지도 (실제 한국 지형) ─────────────────── */
-.map-box{position:relative;background:linear-gradient(180deg,#0A3323,var(--green-deep));border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow)}
+.map-box{isolation:isolate;position:relative;background:linear-gradient(180deg,#0A3323,var(--green-deep));border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow)}
 .map-box > svg{display:block;width:100%;height:auto}
 .map-prov{fill:#10462F;stroke:rgba(214,249,75,.30);stroke-width:.8;vector-effect:non-scaling-stroke;transition:fill .3s}
 .map-label{position:absolute;font-size:10.5px;font-weight:800;color:rgba(255,255,255,.34);letter-spacing:.08em;pointer-events:none;transform:translate(-50%,-50%)}
@@ -242,7 +238,6 @@ body.dark .tag.blue{background:#1B2C45;color:#8AB8FF}
 .pin:active{transform:translate(-50%,-100%) scale(.9)}
 .pin-dot{width:32px;height:32px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);background:var(--lime);display:flex;align-items:center;justify-content:center;box-shadow:0 5px 14px rgba(0,0,0,.4);animation:pinDrop .5s cubic-bezier(.3,1.6,.5,1) both}
 .pin-dot i{transform:rotate(45deg);color:var(--green-deep);font-size:15px}
-.pin-dot::after{content:"";position:absolute;inset:-7px;border-radius:inherit;border:2px solid rgba(214,249,75,.5);animation:pinPulse 2s infinite}
 .pin-n{margin-top:6px;background:rgba(7,36,24,.85);color:#fff;font-size:10px;font-weight:800;padding:3px 7px;border-radius:8px;white-space:nowrap;backdrop-filter:blur(4px)}
 .pin.dim .pin-dot{background:#57705F;animation:none}
 .pin.dim .pin-dot::after{display:none}
@@ -254,7 +249,6 @@ body.dark .tag.blue{background:#1B2C45;color:#8AB8FF}
 .pin-scr.dim .pin-dot{background:#57705F}
 .pin-scr.dim .pin-dot i{color:#C2D4C8}
 @keyframes pinDrop{from{transform:rotate(-45deg) translate(14px,-14px) scale(.3);opacity:0}to{transform:rotate(-45deg);opacity:1}}
-@keyframes pinPulse{0%{transform:scale(.8);opacity:1}100%{transform:scale(1.5);opacity:0}}
 .map-sheet-card{display:flex;gap:13px;align-items:center;background:var(--card);border-radius:var(--r-md);padding:14px;box-shadow:var(--shadow-sm);margin-bottom:10px}
 
 /* ── 동네 시세 지도 ─────────────────────── */
@@ -270,7 +264,7 @@ body.dark .nb-banner-ic{color:var(--lime)}
 .nb-opt.on{background:var(--green);color:var(--lime);transform:scale(1.05)}
 .nb-opt.wk{color:var(--red)}
 .nb-opt.wk.on{color:var(--lime)}
-.nb-map-wrap{position:relative;border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow)}
+.nb-map-wrap{isolation:isolate;position:relative;border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow)}
 #nb-map{position:relative;width:100%;height:400px;background:#DDE8DC;overflow:hidden}
 body.dark #nb-map{background:#1C2820}
 .nb-tile{position:absolute;width:256px;height:256px;pointer-events:none}
@@ -308,7 +302,7 @@ body.dark .bm-name{background:rgba(18,28,21,.88);color:#E8F0E8}
 .bm-hint{position:absolute;left:12px;top:12px;background:rgba(7,36,24,.72);color:#fff;font-size:10.5px;font-weight:700;padding:6px 10px;border-radius:9px;z-index:5;backdrop-filter:blur(4px);pointer-events:none}
 
 /* ── 전국 검색 ─────────────────────────── */
-.s-row{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:16px;padding:13px 14px;box-shadow:var(--shadow-sm);margin-bottom:9px;transition:transform .15s;cursor:pointer}
+.s-row{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:16px;padding:13px 14px;box-shadow:var(--shadow-sm);margin-bottom:8px;transition:transform .15s;cursor:pointer}
 .s-row:active{transform:scale(.98)}
 .s-row b{font-size:14.5px;font-weight:800;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .s-sub{font-size:11.5px;color:var(--ink-3);font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -354,7 +348,7 @@ body.dark .s-ic.scr{background:#1B2C45;color:#8AB8FF}
 .detail-hero svg{display:block;width:100%;height:100%}
 .d-back{position:fixed;top:14px;left:16px;z-index:20;width:42px;height:42px;border-radius:14px;background:rgba(7,36,24,.5);color:#fff;backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;font-size:20px}
 .d-share{position:fixed;top:14px;right:16px;z-index:20;width:42px;height:42px;border-radius:14px;background:rgba(7,36,24,.5);color:#fff;backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;font-size:19px}
-.d-card{background:var(--card);border-radius:var(--r-lg);padding:22px 20px;margin:0 16px;box-shadow:var(--shadow-sm)}
+.d-card{isolation:isolate;background:var(--card);border-radius:var(--r-lg);padding:20px;margin:0 16px;box-shadow:var(--shadow-sm)}
 .d-card + .d-card{margin-top:14px}
 .d-card h3{font-size:16px;font-weight:800;margin-bottom:14px;letter-spacing:-.02em;display:flex;align-items:center;gap:7px}
 .d-card h3 i{color:var(--green-2)}
@@ -364,7 +358,7 @@ body.dark .d-card h3 i{color:var(--lime)}
 .spec{background:var(--bg);border-radius:14px;padding:12px 4px;text-align:center}
 .spec b{display:block;font-size:15px;font-weight:900;letter-spacing:-.02em}
 .spec span{font-size:10px;color:var(--ink-3);font-weight:700}
-.fee-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.fee-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px dashed var(--line);font-size:14px}
 .fee-row:last-child{border-bottom:0}
 .fee-row span{color:var(--ink-2);font-weight:600}
 .fee-row b{font-weight:800;font-variant-numeric:tabular-nums}
@@ -379,7 +373,7 @@ body.dark .fee-row.total b{color:var(--lime)}
 .g-cap{position:absolute;left:8px;bottom:8px;background:rgba(7,36,24,.7);color:#fff;font-size:10px;font-weight:800;padding:4px 8px;border-radius:7px;backdrop-filter:blur(4px);z-index:2}
 .facil{display:flex;flex-wrap:wrap;gap:8px}
 .facil .tag{padding:8px 12px;font-size:12.5px}
-.joiner-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--bg)}
+.joiner-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--bg)}
 .joiner-row:last-child{border-bottom:0}
 .joiner-row .av{width:44px;height:44px;border-radius:16px;flex:none}
 .jr-name{font-size:14.5px;font-weight:800}
@@ -389,7 +383,7 @@ body.dark .fee-row.total b{color:var(--lime)}
 .jr-temp b{font-size:15px;font-weight:900;color:var(--green-2)}
 body.dark .jr-temp b{color:var(--lime)}
 .jr-temp span{display:block;font-size:10px;color:var(--ink-3);font-weight:700}
-.slot-empty{display:flex;align-items:center;gap:12px;padding:11px 0;color:var(--ink-3)}
+.slot-empty{display:flex;align-items:center;gap:12px;padding:12px 0;color:var(--ink-3)}
 .slot-empty .dash{width:44px;height:44px;border-radius:16px;border:2px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:18px;flex:none}
 .cta-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;padding:12px 16px calc(12px + var(--safe-b));background:var(--glass);backdrop-filter:blur(22px) saturate(1.8);-webkit-backdrop-filter:blur(22px) saturate(1.8);border-top:1px solid var(--glass-bd);display:flex;gap:10px;align-items:center;z-index:40}
 .cta-price b{font-size:19px;font-weight:900;display:block}
@@ -408,8 +402,7 @@ body.dark .jr-temp b{color:var(--lime)}
 .ob-slides::-webkit-scrollbar{display:none}
 .ob-slide{flex:none;width:100%;scroll-snap-align:center;display:flex;flex-direction:column;justify-content:center;padding:40px 30px}
 .ob-art{height:150px;margin-bottom:30px;display:flex;align-items:center}
-.ob-art svg{height:100%;animation:obFloat 3.4s ease-in-out infinite}
-@keyframes obFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.ob-art svg{height:100%}
 .ob-slide h2{font-size:28px;font-weight:900;line-height:1.3;letter-spacing:-.03em}
 .ob-slide h2 em{font-style:normal;color:var(--lime)}
 .ob-slide p{margin-top:14px;font-size:15px;line-height:1.65;color:rgba(255,255,255,.6);font-weight:500}
@@ -438,7 +431,7 @@ input[type=range]{-webkit-appearance:none;height:6px;border-radius:100px;backgro
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--green);border:4px solid var(--lime);box-shadow:var(--shadow-sm)}
 
 /* ── 프로필 ────────────────────────────── */
-.prof-hero{background:var(--green);border-radius:0 0 32px 32px;padding:58px 24px 30px;color:#fff;text-align:center;position:relative;overflow:hidden}
+.prof-hero{isolation:isolate;background:var(--green);border-radius:0 0 32px 32px;padding:58px 24px 30px;color:#fff;text-align:center;position:relative;overflow:hidden}
 .prof-hero::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);background-size:20px 20px}
 .prof-av{width:88px;height:88px;border-radius:30px;margin:0 auto;border:3px solid var(--lime);position:relative;box-shadow:0 10px 26px rgba(0,0,0,.3)}
 .prof-av svg{width:52%;height:52%}
@@ -461,7 +454,7 @@ body.dark .stat-cell b{color:var(--lime)}
 .rv-top .stars{color:var(--amber)}
 .rv-top .when{color:var(--ink-3);font-weight:600}
 .rv-text{margin-top:7px;font-size:13.5px;line-height:1.55;color:var(--ink-2);font-weight:500}
-.hist-card{display:flex;align-items:center;gap:13px;background:var(--card);border-radius:var(--r-md);padding:15px;box-shadow:var(--shadow-sm);margin-bottom:11px}
+.hist-card{display:flex;align-items:center;gap:13px;background:var(--card);border-radius:var(--r-md);padding:15px;box-shadow:var(--shadow-sm);margin-bottom:12px}
 .hist-date{flex:none;width:52px;text-align:center;background:var(--bg);border-radius:13px;padding:9px 0}
 .hist-date b{display:block;font-size:17px;font-weight:900}
 .hist-date span{font-size:10px;color:var(--ink-3);font-weight:800}
@@ -491,12 +484,12 @@ body.dark .menu-row i:first-child{color:var(--lime)}
 .faq-item.open .faq-a{max-height:220px}
 .faq-a > div{padding:0 4px 16px}
 /* 결제수단 카드 */
-.pay-card{background:linear-gradient(135deg,#0F4530,var(--green-deep));border-radius:var(--r-lg);padding:22px 20px;color:#fff;position:relative;overflow:hidden;margin-bottom:14px}
+.pay-card{background:linear-gradient(135deg,#0F4530,var(--green-deep));border-radius:var(--r-lg);padding:20px;color:#fff;position:relative;overflow:hidden;margin-bottom:14px}
 .pay-card::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(214,249,75,.08) 1px,transparent 1px);background-size:18px 18px}
 .pay-bank{font-size:13px;font-weight:800;color:var(--lime);position:relative}
 .pay-num{margin-top:10px;font-size:19px;font-weight:900;letter-spacing:.06em;font-variant-numeric:tabular-nums;position:relative}
 .pay-holder{margin-top:6px;font-size:12px;color:rgba(255,255,255,.6);font-weight:600;position:relative}
-.radio-row{display:flex;align-items:center;gap:12px;padding:14px;border:1.5px solid var(--line);border-radius:16px;margin-bottom:9px;transition:border-color .2s,background-color .2s;background:var(--card)}
+.radio-row{display:flex;align-items:center;gap:12px;padding:14px;border:1.5px solid var(--line);border-radius:16px;margin-bottom:8px;transition:border-color .2s,background-color .2s;background:var(--card)}
 .radio-row.on{border-color:var(--green);background:var(--lime-soft)}
 body.dark .radio-row.on{border-color:var(--lime);background:#26331A}
 .radio-row .rd{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);flex:none;position:relative;transition:border-color .2s}
@@ -506,7 +499,7 @@ body.dark .radio-row.on{border-color:var(--lime);background:#26331A}
 .radio-row p{font-size:12px;color:var(--ink-3);font-weight:600;margin-top:2px}
 
 /* ── 크루 ─────────────────────────────── */
-.crew-card{background:var(--card);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);margin-bottom:14px;transition:transform .18s}
+.crew-card{isolation:isolate;background:var(--card);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);margin-bottom:14px;transition:transform .18s}
 .crew-card:active{transform:scale(.98)}
 .crew-cover{height:86px;display:flex;align-items:center;padding:0 22px;font-size:38px;color:#fff;position:relative;overflow:hidden}
 .crew-cover::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.14) 1px,transparent 1px);background-size:16px 16px}
@@ -576,7 +569,7 @@ body.dark .sheet-ic{color:var(--lime)}
 .empty b{color:var(--ink-2);font-size:15.5px;display:block;margin-bottom:6px}
 .empty p{font-size:13px;font-weight:500;line-height:1.6}
 
-.info-card{background:linear-gradient(135deg,#0F4530,var(--green-deep));border-radius:var(--r-lg);padding:22px 20px;color:#fff;position:relative;overflow:hidden}
+.info-card{background:linear-gradient(135deg,#0F4530,var(--green-deep));border-radius:var(--r-lg);padding:20px;color:#fff;position:relative;overflow:hidden}
 .info-card::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(214,249,75,.08) 1px,transparent 1px);background-size:18px 18px}
 .info-card h3{font-size:17px;font-weight:900;letter-spacing:-.02em;position:relative}
 .info-card h3 em{font-style:normal;color:var(--lime)}
@@ -585,7 +578,7 @@ body.dark .sheet-ic{color:var(--lime)}
 .info-step p{font-size:13.5px;line-height:1.55;color:rgba(255,255,255,.78);font-weight:500}
 .info-step p b{color:#fff}
 
-.partner-card{background:var(--card);border:1.5px dashed #BFCDB9;border-radius:var(--r-lg);padding:22px 20px;text-align:center}
+.partner-card{background:var(--card);border:1.5px dashed #BFCDB9;border-radius:var(--r-lg);padding:20px;text-align:center}
 body.dark .partner-card{border-color:#3A4A3E}
 .partner-card .ic{width:60px;height:60px;border-radius:20px;background:var(--lime-soft);color:#3E5A00;font-size:28px;display:flex;align-items:center;justify-content:center;margin:0 auto}
 body.dark .partner-card .ic{color:var(--lime)}
