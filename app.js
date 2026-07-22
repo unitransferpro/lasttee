@@ -8,7 +8,7 @@ const appEl = $("#app");
 const won = n => "₩" + Math.round(n).toLocaleString("ko-KR");
 const BOOT = new Date();
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-const VERSION = "1.9.1";
+const VERSION = "1.10.0";
 
 /* 전국 디렉토리(venues.js) 항목 → 코스 객체 (dv{index} id) */
 const DIRV = typeof DIR_VENUES !== "undefined" ? DIR_VENUES : [];
@@ -2347,11 +2347,15 @@ window.svClear = () => {
   const x = $("#s-clear");
   if (x) x.classList.add("hidden");
 };
+const FILTER_KEYS = [
+  { key: "kind", label: "종류", opts: ["전체", "필드", "스크린"], icon: { "필드": "ph-golf", "스크린": "ph-monitor-play" } },
+  { key: "region", label: "지역", opts: REGIONS, icon: {} },
+  { key: "type", label: "구분", opts: ["전체", "회원제", "퍼블릭"], icon: {} },
+  { key: "holes", label: "홀수", opts: ["전체", "18홀", "27홀", "36홀+"], icon: {} },
+];
+function activeFilters() { return FILTER_KEYS.filter(f => searchState[f.key] !== "전체"); }
 function renderSearch() {
-  const chipsRow = (id, opts, cur, icon = {}) => `
-    <div class="chips" id="${id}" style="padding-bottom:2px">
-      ${opts.map(o => `<button class="chip ${cur === o ? "on" : ""}" data-v="${o}">${icon[o] ? `<i class="ph-fill ${icon[o]}"></i> ` : ""}${o}</button>`).join("")}
-    </div>`;
+  const act = activeFilters();
   appEl.innerHTML = `
   <div class="view" style="padding-bottom:40px">
     <div class="page-head">
@@ -2359,15 +2363,21 @@ function renderSearch() {
       <h1>전국 검색</h1>
       <span id="s-total" style="margin-left:auto;font-size:12px;font-weight:800;color:var(--ink-3)">${allVenues().length.toLocaleString()}곳 등록</span>
     </div>
-    <div class="px"><div class="f-input in"><i class="ph-bold ph-magnifying-glass" style="color:var(--ink-3)"></i>
-      <input id="s-q" placeholder="골프장 · 스크린 매장 이름 검색" value="${searchState.q}" autocomplete="off">
-      <button id="s-clear" class="${searchState.q ? "" : "hidden"}" style="color:var(--ink-3);font-size:18px" onclick="svClear()"><i class="ph-fill ph-x-circle"></i></button>
-    </div></div>
-    ${chipsRow("s-kind", ["전체", "필드", "스크린"], searchState.kind, { "필드": "ph-golf", "스크린": "ph-monitor-play" })}
-    ${chipsRow("s-region", REGIONS, searchState.region)}
-    ${chipsRow("s-type", ["전체", "회원제", "퍼블릭"], searchState.type)}
-    ${chipsRow("s-holes", ["전체", "18홀", "27홀", "36홀+"], searchState.holes)}
-    <div class="px" style="margin-top:8px" id="s-body">${svBody()}</div>
+    <div class="px" style="display:flex;gap:9px">
+      <div class="f-input in" style="flex:1"><i class="ph-bold ph-magnifying-glass" style="color:var(--ink-3)"></i>
+        <input id="s-q" placeholder="골프장 · 스크린 매장 이름 검색" value="${searchState.q}" autocomplete="off">
+        <button id="s-clear" class="${searchState.q ? "" : "hidden"}" style="color:var(--ink-3);font-size:18px" onclick="svClear()"><i class="ph-fill ph-x-circle"></i></button>
+      </div>
+      <button class="filter-btn in" onclick="filterSheet()" aria-label="필터">
+        <i class="ph-bold ph-faders"></i>
+        ${act.length ? `<span class="fb-badge">${act.length}</span>` : ""}
+      </button>
+    </div>
+    ${act.length ? `<div class="px" style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+      ${act.map(f => `<button class="chip on" style="padding:7px 12px;font-size:12.5px" onclick="fsClear('${f.key}')">${searchState[f.key]} <i class="ph-bold ph-x" style="font-size:10px"></i></button>`).join("")}
+      <button class="chip" style="padding:7px 12px;font-size:12.5px" onclick="fsReset(true)">모두 지우기</button>
+    </div>` : ""}
+    <div class="px" style="margin-top:12px" id="s-body">${svBody()}</div>
   </div>`;
   $("#s-q").addEventListener("input", e => {
     searchState.q = e.target.value;
@@ -2376,18 +2386,45 @@ function renderSearch() {
     if (x) x.classList.toggle("hidden", !searchState.q);
     svRefresh();
   });
-  const bindChips = (id, key) => $("#" + id).addEventListener("click", e => {
-    const b = e.target.closest(".chip"); if (!b) return;
-    searchState[key] = b.dataset.v;
-    searchState.limit = 30;
-    $$("#" + id + " .chip").forEach(x => x.classList.toggle("on", x === b));
-    svRefresh();
-  });
-  bindChips("s-kind", "kind");
-  bindChips("s-region", "region");
-  bindChips("s-type", "type");
-  bindChips("s-holes", "holes");
 }
+/* 필터 시트: 모든 필터를 한 곳에 정리 */
+window.filterSheet = () => {
+  const group = f => `
+    <div class="mg-title" style="margin-top:${f.key === "kind" ? "14px" : "18px"}">${f.label}</div>
+    <div class="seg" id="fs-${f.key}">
+      ${f.opts.map(o => `<button class="${searchState[f.key] === o ? "on" : ""}" onclick="fsSet('${f.key}','${o}',this)">${f.icon[o] ? `<i class="ph-fill ${f.icon[o]}"></i> ` : ""}${o}</button>`).join("")}
+    </div>`;
+  openSheet(`
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <b style="font-size:18px;font-weight:900">필터</b>
+      <button style="font-size:13px;font-weight:700;color:var(--ink-3);padding:6px" onclick="fsReset()">초기화</button>
+    </div>
+    ${FILTER_KEYS.map(group).join("")}
+    <button class="btn btn-primary" id="fs-apply" style="margin-top:22px" onclick="fsApply()">결과 ${searchResults().length.toLocaleString()}곳 보기</button>
+  `);
+};
+window.fsSet = (key, val, btn) => {
+  searchState[key] = val;
+  searchState.limit = 30;
+  $$("#fs-" + key + " button").forEach(b => b.classList.toggle("on", b === btn));
+  const ap = $("#fs-apply");
+  if (ap) ap.textContent = `결과 ${searchResults().length.toLocaleString()}곳 보기`;
+};
+window.fsReset = closeAfter => {
+  FILTER_KEYS.forEach(f => { searchState[f.key] = "전체"; });
+  searchState.limit = 30;
+  if (closeAfter) { renderSearch(); return; }
+  filterSheet();
+};
+window.fsApply = () => {
+  closeSheet();
+  renderSearch();
+};
+window.fsClear = key => {
+  searchState[key] = "전체";
+  searchState.limit = 30;
+  renderSearch();
+};
 
 /* ── 연습장 구독 나눠쓰기 ── */
 function subCard(s) {
