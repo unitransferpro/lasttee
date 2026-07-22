@@ -8,7 +8,7 @@ const appEl = $("#app");
 const won = n => "₩" + Math.round(n).toLocaleString("ko-KR");
 const BOOT = new Date();
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-const VERSION = "1.13.0";
+const VERSION = "1.14.0";
 
 /* 전국 디렉토리(venues.js) 항목 → 코스 객체 (dv{index} id) */
 const DIRV = typeof DIR_VENUES !== "undefined" ? DIR_VENUES : [];
@@ -2499,6 +2499,8 @@ $$("#tabbar .tab").forEach(t => t.addEventListener("click", () => { location.has
 
 /* ── 부트 ─────────────────────────────── */
 window.closeSheet = closeSheet;
+// 백엔드 연결 시도 (LT_API 미설정이면 즉시 no-op → 데모 모드 유지)
+if (window.LT) LT.init().then(on => { if (on && location.hash === "#/home") render(); }).catch(() => {});
 setTimeout(() => {
   $("#splash").classList.add("out");
   if (!S.user && !S.seenOb && (!location.hash || location.hash === "#" || location.hash === "#/")) location.hash = "#/ob";

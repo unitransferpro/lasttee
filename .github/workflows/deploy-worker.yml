@@ -1,0 +1,27 @@
+# main 브랜치의 worker/ 변경 시 Cloudflare Workers로 백엔드 자동 배포.
+# 필요한 저장소 시크릿(Settings → Secrets and variables → Actions):
+#   CLOUDFLARE_API_TOKEN   — Workers Scripts:Edit + Workers KV:Edit 권한 토큰
+#   CLOUDFLARE_ACCOUNT_ID  — 대시보드 우측 Account ID
+name: Deploy Worker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "worker/**"
+      - ".github/workflows/deploy-worker.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: 백엔드 배포
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cloudflare Workers 배포
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: worker
+          wranglerVersion: "4.110.0"

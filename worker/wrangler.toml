@@ -1,0 +1,15 @@
+# 라스트티 백엔드 — Cloudflare Worker (API 전용) + KV
+# 정적 앱(GitHub Pages)이 이 워커를 cross-origin으로 호출한다.
+name = "lasttee-api"
+main = "worker.js"
+workers_dev = true
+compatibility_date = "2026-07-01"
+observability = { enabled = true }
+
+# KV 네임스페이스. 아직 없으면 worker/ 디렉터리에서:
+#   npx wrangler kv namespace create LT_KV
+# 출력된 id를 아래 REPLACE_WITH_KV_ID 자리에 붙여넣고 재배포한다.
+# (KV 바인딩이 없으면 /api/*는 503을 돌려주고, 프론트는 데모 모드로 폴백한다.)
+[[kv_namespaces]]
+binding = "LT_KV"
+id = "REPLACE_WITH_KV_ID"
