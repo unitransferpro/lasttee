@@ -660,11 +660,7 @@ body.dark .notif-row .ic{color:var(--lime)}
 @keyframes sheetIcPop{0%{transform:scale(.4) rotate(-12deg);opacity:0}60%{transform:scale(1.12) rotate(4deg)}100%{transform:scale(1) rotate(0);opacity:1}}
 .sheet-ic{animation:sheetIcPop .55s cubic-bezier(.3,1.6,.5,1) both}
 
-/* 위성 썸네일 로딩 셰머 (이미지 뜨기 전) */
-.sat{position:relative}
-.sat::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.28) 50%,transparent 70%);background-size:220% 100%;animation:satShimmer 1.5s linear infinite;pointer-events:none;z-index:1}
-.sat:has(img)::after{display:none}
-@keyframes satShimmer{to{background-position:-220% 0}}
+/* 위성 이미지는 로드되면 satIn 페이드로 등장 (좌표 없는 곳은 courseArt SVG 폴백) */
 
 /* 카운트다운 초 변화 시 은은한 탭 (JS가 .tick 토글) */
 @keyframes cdTick{0%{transform:scale(1)}30%{transform:scale(1.06)}100%{transform:scale(1)}}
