@@ -8,7 +8,7 @@ const appEl = $("#app");
 const won = n => "₩" + Math.round(n).toLocaleString("ko-KR");
 const BOOT = new Date();
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-const VERSION = "1.14.0";
+const VERSION = "1.15.0";
 
 /* 전국 디렉토리(venues.js) 항목 → 코스 객체 (dv{index} id) */
 const DIRV = typeof DIR_VENUES !== "undefined" ? DIR_VENUES : [];
@@ -264,7 +264,11 @@ setInterval(() => {
     if (timer) timer.classList.toggle("urgent", left > 0 && left < 3600e3);
     if (left <= 0) { el.textContent = "티오프!"; return; }
     const h = Math.floor(left / 3600e3), m = Math.floor(left % 3600e3 / 60e3), s = Math.floor(left % 60e3 / 1e3);
-    el.textContent = (h > 0 ? h + ":" : "") + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+    const next = (h > 0 ? h + ":" : "") + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+    if (el.textContent !== next) {
+      el.textContent = next;
+      if (el.classList.contains("countdown")) { el.classList.remove("tick"); void el.offsetWidth; el.classList.add("tick"); }
+    }
   });
 }, 1000);
 
@@ -638,7 +642,7 @@ function renderHome() {
           <div class="hero-acts">
             <button class="hero-bell" onclick="location.hash='#/search'"><i class="ph-bold ph-magnifying-glass"></i></button>
             <button class="hero-bell" onclick="location.hash='#/chat'"><i class="ph-fill ph-chat-circle-dots"></i>${unread ? '<span class="badge red"></span>' : ""}</button>
-            <button class="hero-bell" onclick="location.hash='#/alerts'"><i class="ph-fill ph-bell"></i>${unseenNotifs() ? '<span class="badge red"></span>' : ""}</button>
+            <button class="hero-bell ${unseenNotifs() ? "ring" : ""}" onclick="location.hash='#/alerts'"><i class="ph-fill ph-bell"></i>${unseenNotifs() ? '<span class="badge red"></span>' : ""}</button>
           </div>
         </div>
         <h1><span class="hl" style="animation-delay:.05s">${nickname},</span><br><span class="hl" style="animation-delay:.16s">지금 <em>빈자리 ${open.length}개</em>가</span><br><span class="hl" style="animation-delay:.27s">기다리고 있어요</span></h1>

@@ -1,13 +1,13 @@
-const VER = "lt-v19";
+const VER = "lt-v20";
 const SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=19",
-  "./api.js?v=19",
-  "./geo.js?v=19",
-  "./venues.js?v=19",
-  "./data.js?v=19",
-  "./app.js?v=19",
+  "./styles.css?v=20",
+  "./api.js?v=20",
+  "./geo.js?v=20",
+  "./venues.js?v=20",
+  "./data.js?v=20",
+  "./app.js?v=20",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
