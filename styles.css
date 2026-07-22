@@ -150,6 +150,8 @@ body.dark .tag.blue{background:#1B2C45;color:#8AB8FF}
 /* ── 아바타 ────────────────────────────── */
 .av{background:var(--sand);display:flex;align-items:center;justify-content:center;color:var(--green-deep)}
 .av svg{width:58%;height:58%}
+.av-sm{width:30px;height:30px;border-radius:10px;flex:none}
+.av-md{width:42px;height:42px;border-radius:14px;flex:none}
 .av.g0{background:linear-gradient(135deg,#B7E4C7,#52B788)}
 .av.g1{background:linear-gradient(135deg,#FFD6A5,#F5A524)}
 .av.g2{background:linear-gradient(135deg,#A5D8FF,#4DABF7)}

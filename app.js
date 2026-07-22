@@ -8,7 +8,7 @@ const appEl = $("#app");
 const won = n => "₩" + Math.round(n).toLocaleString("ko-KR");
 const BOOT = new Date();
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-const VERSION = "1.15.1";
+const VERSION = "1.16.0";
 
 /* 전국 디렉토리(venues.js) 항목 → 코스 객체 (dv{index} id) */
 const DIRV = typeof DIR_VENUES !== "undefined" ? DIR_VENUES : [];
@@ -114,7 +114,9 @@ function joinerIds(p) {
 function isSeedPost(p) { return p && p.hostId !== "me" && !String(p.id).startsWith("mp"); }
 function slotsLeft(p) { return Math.max(0, p.total - joinerIds(p).length); }
 function discount(p) { return Math.round((1 - p.price / p.normal) * 100); }
-function openPosts() { return allPosts().filter(p => slotsLeft(p) > 0); }
+// 릴리즈: "지금 참여 가능" 목록은 실사용자 모집만. 시드 16건은 지난 매칭 사례로만 표시.
+function openPosts() { return allPosts().filter(p => !isSeedPost(p) && slotsLeft(p) > 0); }
+function pastExamples() { return POSTINGS.slice(0, 6); }
 function postsForCourse(cid) { return openPosts().filter(p => p.courseId === cid); }
 
 function personOf(id) {
@@ -302,43 +304,8 @@ function notif(title, body, icon = "ph-bell", route = "#/alerts") {
   if (h === "#/alerts" || h === "#/home" || h === route) render();
 }
 
-/* 승인 대기·신청 시뮬레이션 스위퍼 (데모: 서버 푸시 대체) */
-function sweep() {
-  const now = Date.now();
-  let changed = false;
-  S.pending = S.pending.filter(item => {
-    if (now < item.due) return true;
-    const p = postById(item.id);
-    changed = true;
-    if (p && !S.joined.includes(item.id)) {
-      S.joined.push(item.id);
-      const h = personOf(p.hostId);
-      const c = courseById(p.courseId);
-      notif("참여가 확정됐어요", `${h ? h.name : "호스트"}님이 승인했어요. ${c.name} ${dayLabel(p)} ${teeStr(p)}`, "ph-check-circle", "#/post/" + item.id);
-    }
-    return false;
-  });
-  S.reqPlan = S.reqPlan.filter(r => {
-    if (now < r.due) return true;
-    changed = true;
-    const p = postById(r.pid);
-    const h = hostById(r.hid);
-    if (p && h && slotsLeft(p) > 0 && !joinerIds(p).includes(r.hid)) {
-      if (p.instant) {
-        if (!S.extraJoiners[r.pid]) S.extraJoiners[r.pid] = [];
-        S.extraJoiners[r.pid].push(r.hid);
-        notif("새 참여 확정", `${h.name}님이 내 모집에 바로 참여했어요.`, "ph-user-plus", "#/post/" + r.pid);
-      } else {
-        if (!S.reqs[r.pid]) S.reqs[r.pid] = [];
-        S.reqs[r.pid].push({ hid: r.hid, status: "pending", t: now });
-        notif("새 참여 신청", `${h.name}님이 참여를 신청했어요. 확인 후 승인해주세요.`, "ph-hand-waving", "#/post/" + r.pid);
-      }
-    }
-    return false;
-  });
-  if (changed) Store.save();
-}
-setInterval(sweep, 4000);
+/* 실서비스: 참여 신청·승인 알림은 백엔드(LT Worker)가 실제 이벤트로 전달한다.
+ * 백엔드가 붙기 전에는 가짜 이벤트를 만들지 않는다 (no fake). */
 
 /* ── 채팅 데이터 ────────────────────────── */
 const pendingReply = {};
@@ -359,24 +326,14 @@ function pushMsg(hid, f, t) {
   S.chats[hid].push({ f, t, w: nowStr() });
   Store.save();
 }
-function scheduleReply(hid, custom) {
-  pendingReply[hid] = true;
-  const delay = 1400 + Math.random() * 1400;
-  setTimeout(() => {
-    const hostMsgN = chatMsgs(hid).filter(m => m.f === "h").length;
-    pushMsg(hid, "h", custom || DM_REPLIES[hostMsgN % DM_REPLIES.length]);
-    pendingReply[hid] = false;
-    if (location.hash === "#/chat/" + hid) renderThread(hid);
-    else if (location.hash === "#/chat") renderChatList();
-  }, delay);
-  if (location.hash === "#/chat/" + hid) renderThread(hid);
-}
+// 채팅은 실사용자 간 기능. 백엔드가 붙기 전에는 가짜 자동응답을 만들지 않는다.
+const chatLive = () => !!(window.LT && LT.online);
 window.openChat = hid => {
-  if (!S.user) { needProfile("메시지를 보내려면 프로필이 필요해요"); return; }
-  if (!S.chats[hid]) {
-    const h = hostById(hid);
-    pushMsg(hid, "h", `안녕하세요, ${h.name}입니다. 궁금한 점 편하게 물어보세요!`);
+  if (!chatLive()) {
+    toast("메시지는 정식 출시 후 열려요", "chat-circle-dots");
+    return;
   }
+  if (!S.user) { needProfile("메시지를 보내려면 프로필이 필요해요"); return; }
   location.hash = "#/chat/" + hid;
 };
 
@@ -424,6 +381,26 @@ function postCard(p) {
         <div class="pc-slots"><div class="pc-avatars">${js}</div><span class="pc-need">${left}자리</span></div>
       </div>
       <div class="pc-badges">${isSeedPost(p) ? '<span class="tag" style="background:#F3ECDC;color:#8A6D2F">예시</span>' : ""}${scr ? '<span class="tag blue"><i class="ph-fill ph-monitor-play"></i>스크린</span>' : ""}${p.tags.slice(0, 2).map(t => `<span class="tag ${t.includes("초보") ? "lime" : ""}">${t}</span>`).join("")}${p.instant ? '<span class="tag green"><i class="ph-fill ph-lightning"></i>즉시확정</span>' : ""}</div>
+    </div>
+  </div>`;
+}
+
+// 지난 매칭 사례 카드 (읽기 전용, 과거형)
+function pastCard(p) {
+  const c = courseById(p.courseId);
+  const scr = isScreen(c);
+  const js = [p.hostId, ...p.joiners.slice(0, 2)].map(id => avat(personOf(id))).join("");
+  return `
+  <div class="post-card in past" onclick="location.hash='#/post/${p.id}'">
+    <div class="pc-art sat">${satShot(c, scr ? 17 : 14)}<div class="pc-off" style="background:rgba(90,90,90,.85)">성사</div></div>
+    <div class="pc-main">
+      <div class="pc-title">${c.name}</div>
+      <div class="pc-meta">${c.city} · ${scr ? p.holes + "홀 게임" : p.holes + "홀"} · ${discount(p)}% 할인으로 마감</div>
+      <div class="pc-row">
+        <div class="pc-price"><del>${won(p.normal)}</del><b>${won(p.price)}<small>/1인</small></b></div>
+        <div class="pc-slots"><div class="pc-avatars">${js}</div><span style="margin-left:6px;font-size:11.5px;font-weight:800;color:var(--ink-3)">4명 완료</span></div>
+      </div>
+      <div class="pc-badges"><span class="tag" style="background:#EDE8DA;color:var(--ink-3)"><i class="ph-fill ph-check-circle"></i>지난 사례</span>${scr ? '<span class="tag blue"><i class="ph-fill ph-monitor-play"></i>스크린</span>' : ""}</div>
     </div>
   </div>`;
 }
@@ -645,26 +622,27 @@ function renderHome() {
             <button class="hero-bell ${unseenNotifs() ? "ring" : ""}" onclick="location.hash='#/alerts'"><i class="ph-fill ph-bell"></i>${unseenNotifs() ? '<span class="badge red"></span>' : ""}</button>
           </div>
         </div>
-        <h1><span class="hl" style="animation-delay:.05s">${nickname},</span><br><span class="hl" style="animation-delay:.16s">지금 <em>빈자리 ${open.length}개</em>가</span><br><span class="hl" style="animation-delay:.27s">기다리고 있어요</span></h1>
-        <div class="hero-sub">일행 취소로 비어버린 티타임에 할인가로 참여하세요</div>
+        ${open.length
+          ? `<h1><span class="hl" style="animation-delay:.05s">${nickname},</span><br><span class="hl" style="animation-delay:.16s">지금 <em>빈자리 ${open.length}개</em>가</span><br><span class="hl" style="animation-delay:.27s">기다리고 있어요</span></h1>
+        <div class="hero-sub">일행 취소로 비어버린 티타임에 할인가로 참여하세요</div>`
+          : `<h1><span class="hl" style="animation-delay:.05s">${nickname},</span><br><span class="hl" style="animation-delay:.16s">취소된 자리가</span><br><span class="hl" style="animation-delay:.27s">여기서 <em>반값</em>이 됩니다</span></h1>
+        <div class="hero-sub">일행이 취소됐다면 30초 만에 빈자리를 올려보세요</div>`}
         <div class="hero-stats">
-          <div class="hs"><b id="st-today">0</b><span>마감 임박</span></div>
-          <div class="hs"><b id="st-off">0%</b><span>평균 할인율</span></div>
-          <div class="hs"><b id="st-save">₩0</b><span>최대 절약액</span></div>
+          <div class="hs"><b id="st-open">0</b><span>지금 빈자리</span></div>
+          <div class="hs"><b id="st-field">0</b><span>전국 골프장</span></div>
+          <div class="hs"><b id="st-fac">0</b><span>스크린 · 연습장</span></div>
         </div>
       </div>
     </div>
 
-    <div class="hot-wrap">
-      <div class="hot-scroll">${today.map(hotCard).join("") || '<div class="empty" style="width:100%"><b>오늘 마감 임박 모집이 없어요</b></div>'}</div>
-    </div>
+    ${today.length ? `<div class="hot-wrap">
+      <div class="hot-scroll">${today.map(hotCard).join("")}</div>
+    </div>` : ""}
 
     <div class="ticker"><div class="ticker-in">
-      <em>●</em>지금 참여 가능한 빈자리 ${open.length}건
-      <em>●</em>오늘 마감 임박 ${today.length}건
-      <em>●</em>평균 할인율 ${avgOff}%
-      <em>●</em>최대 절약 ${won(maxSave)}
       <em>●</em>전국 골프장 · 스크린 ${(COURSES.length + DIRV.length).toLocaleString()}곳 등록
+      <em>●</em>지금 참여 가능한 빈자리 ${open.length}건
+      ${open.length ? `<em>●</em>평균 할인율 ${avgOff}%<em>●</em>최대 절약 ${won(maxSave)}` : `<em>●</em>첫 모집을 올리면 여기 실시간으로 표시돼요`}
     </div></div>
 
     <div class="px" style="margin-top:16px">
@@ -676,14 +654,8 @@ function renderHome() {
       </button>
     </div>
 
-    ${S.demoDismissed ? "" : `<div class="px" style="margin-top:16px"><div class="demo-note in">
-      <i class="ph-fill ph-flask"></i>
-      <div style="flex:1"><b>지금 보이는 모집은 서비스 예시예요</b><p>실제 골퍼들이 모이면 실시간 빈자리로 채워집니다. 골프장 정보(897곳)는 공시·실측 기반의 실제 데이터예요.</p></div>
-      <button onclick="dismissDemo(this)" aria-label="닫기"><i class="ph-bold ph-x"></i></button>
-    </div></div>`}
-
-    <div class="h-sec px"><h2>지금 참여할 수 있는 라운드</h2><span class="more" onclick="location.hash='#/map'">지도로 보기</span></div>
-    <div class="chips" id="home-kind" style="padding-bottom:2px">
+    <div class="h-sec px"><h2>지금 참여할 수 있는 라운드</h2>${open.length ? `<span class="more" onclick="location.hash='#/map'">지도로 보기</span>` : ""}</div>
+    ${open.length ? `<div class="chips" id="home-kind" style="padding-bottom:2px">
       ${["전체", "필드", "스크린", "연습장"].map(k => `<button class="chip kind ${homeState.kind === k ? "on" : ""}" data-k="${k}">${k === "필드" ? '<i class="ph-fill ph-golf"></i> ' : k === "스크린" ? '<i class="ph-fill ph-monitor-play"></i> ' : k === "연습장" ? '<i class="ph-fill ph-barbell"></i> ' : ""}${k}</button>`).join("")}
     </div>
     ${homeState.kind !== "연습장" ? `
@@ -695,11 +667,13 @@ function renderHome() {
       ${homeState.kind === "연습장"
         ? SUBS.map(subCard).join("")
         : filtered.map(postCard).join("") || `<div class="empty"><div class="big"><i class="ph ph-golf"></i></div><b>이 지역엔 아직 모집이 없어요</b><p>다른 지역을 보거나, 직접 모집을 올려보세요.</p></div>`}
-    </div>
-
-    ${homeState.kind === "전체" ? `
-    <div class="h-sec px"><h2>연습장 구독 나눠쓰기</h2><span class="more" id="home-more-subs">전체 보기</span></div>
-    <div class="px">${SUBS.slice(0, 2).map(s => `<div class="rv">${subCard(s)}</div>`).join("")}</div>` : ""}
+    </div>`
+      : `<div class="px"><div class="first-post-card in">
+        <div class="fp-ic"><i class="ph-fill ph-flag-pennant"></i></div>
+        <b>아직 열린 빈자리가 없어요</b>
+        <p>라스트티는 이제 막 시작했어요. 일행이 취소됐다면 첫 모집의 주인공이 되어보세요. 전국 ${(COURSES.length + DIRV.length).toLocaleString()}곳 어디서든 올릴 수 있어요.</p>
+        <button class="btn btn-primary" style="margin-top:16px" onclick="location.hash='#/new'"><i class="ph-fill ph-megaphone"></i>첫 빈자리 모집 올리기</button>
+      </div></div>`}
 
     <div class="px rv" style="margin-top:28px">
       <div class="info-card">
@@ -708,6 +682,12 @@ function renderHome() {
         <div class="info-step"><span class="n">2</span><p>호스트는 위약금을 무는 대신, <b>빈자리를 할인가에 양도</b>합니다. 서로에게 이득인 거래예요.</p></div>
         <div class="info-step"><span class="n">3</span><p>캐디피와 카트비도 <b>4명이 나눠</b> 1/N. 혼자였으면 못 갔을 라운드가 반값이 됩니다.</p></div>
       </div>
+    </div>
+
+    <div class="h-sec px"><h2>지난 매칭 사례</h2><span style="font-size:12px;color:var(--ink-3);font-weight:600">예시</span></div>
+    <p class="px" style="font-size:12.5px;color:var(--ink-3);font-weight:500;line-height:1.6;margin:-6px 0 14px">라스트티에서 이렇게 빈자리가 채워집니다. 아래는 서비스 소개용 예시예요.</p>
+    <div class="px">
+      ${pastExamples().map(p => pastCard(p)).join("")}
     </div>
 
     <div class="h-sec px"><h2>같이 칠 사람들</h2><span class="more" onclick="location.hash='#/crew'">크루 전체</span></div>
@@ -725,9 +705,9 @@ function renderHome() {
     </div>
   </div>`;
 
-  countUp($("#st-today"), today.length);
-  countUp($("#st-off"), avgOff, { suffix: "%" });
-  countUp($("#st-save"), maxSave, { prefix: "₩" });
+  countUp($("#st-open"), open.length);
+  countUp($("#st-field"), COURSES.filter(c => !isScreen(c)).length + DIRV.filter(v => v.k !== "s").length);
+  countUp($("#st-fac"), COURSES.filter(isScreen).length + DIRV.filter(v => v.k === "s").length);
   stagger();
   bindRv();
 
@@ -1085,7 +1065,10 @@ function renderPost(id) {
   </div>
 
   <div class="cta-bar">
-    <div class="cta-price"><b>${won(p.price)}</b><span>${discount(p)}% 할인 · ${left}자리</span></div>
+    ${isSeedPost(p)
+      ? `<div class="cta-price"><b>${won(p.price)}</b><span>${discount(p)}% 할인으로 성사</span></div>
+         <button class="btn btn-ghost" disabled><i class="ph-fill ph-check-circle"></i>지난 매칭 사례</button>`
+      : `<div class="cta-price"><b>${won(p.price)}</b><span>${discount(p)}% 할인 · ${left}자리</span></div>
     ${!mine ? `<button class="cta-chat" onclick="openChat('${p.hostId}')"><i class="ph-fill ph-chat-circle-dots"></i></button>` : ""}
     ${mine
       ? `<button class="btn btn-danger" onclick="closeMyPost('${p.id}')">모집 마감하기</button>`
@@ -1093,7 +1076,7 @@ function renderPost(id) {
         ? `<button class="btn btn-ghost" onclick="cancelJoin('${p.id}')">참여 취소</button>`
         : pendingJoin
           ? `<button class="btn btn-ghost" onclick="cancelPending('${p.id}')"><i class="ph-fill ph-hourglass-medium"></i>승인 대기 중 · 취소하기</button>`
-          : `<button class="btn btn-primary" ${left === 0 ? "disabled" : ""} onclick="askJoin('${p.id}')">${left === 0 ? "마감됐어요" : p.instant ? "바로 참여 확정하기" : "참여 신청하기"}</button>`}
+          : `<button class="btn btn-primary" ${left === 0 ? "disabled" : ""} onclick="askJoin('${p.id}')">${left === 0 ? "마감됐어요" : p.instant ? "바로 참여 확정하기" : "참여 신청하기"}</button>`}`}
   </div>`;
   stagger();
 }
@@ -1211,14 +1194,7 @@ window.doJoin = id => {
   }
   if (!S.joined.includes(id)) S.joined.push(id);
   Store.save();
-  if (joinPay === "transfer" && p.hostId !== "me" && hostById(p.hostId)) {
-    const h = hostById(p.hostId);
-    if (!S.chats[p.hostId]) S.chats[p.hostId] = [];
-    scheduleReply(p.hostId, `참여 확정 감사합니다! 캐디피와 카트비 정산 계좌는 라운드 당일 안내드릴게요. 그린피는 골프장 프론트에서 결제하시면 됩니다. 당일 뵐게요, ${h.name}입니다.`);
-    toast("참여 확정! 정산 안내가 채팅으로 도착해요");
-  } else {
-    toast("참여 확정! 예정 라운드에 추가했어요");
-  }
+  toast(joinPay === "transfer" ? "참여 확정! 정산 계좌는 호스트가 안내해드려요" : "참여 확정! 예정 라운드에 추가했어요");
   renderPost(id);
 };
 window.cancelJoin = id => {
@@ -1341,6 +1317,11 @@ function renderCourse(id) {
         <div class="facil">${c.facilities.map(f => `<span class="tag">${f}</span>`).join("")}</div>
       </div>` : ""}
 
+      ${scr ? `
+      <div class="d-card in">
+        <h3><i class="ph-fill ph-info"></i>이용 안내</h3>
+        <p style="font-size:13.5px;color:var(--ink-2);font-weight:600;line-height:1.65">스크린골프는 <b>정보 조회 전용</b>이에요. 예약과 요금은 아래 네이버 지도 또는 매장에 직접 문의하세요.</p>
+      </div>` : `
       <div class="d-card in">
         <h3><i class="ph-fill ph-lightning"></i>진행 중인 모집 ${posts.length ? `<span class="tag red" style="margin-left:2px">${posts.length}건</span>` : ""}</h3>
         ${posts.length ? posts.map(p => `
@@ -1351,7 +1332,7 @@ function renderCourse(id) {
           </div>`).join("")
           : '<p style="font-size:13.5px;color:var(--ink-3);font-weight:600">지금은 열린 모집이 없어요. 첫 모집을 올려보세요!</p>'}
         <button class="btn btn-primary" style="margin-top:12px" onclick="location.hash='#/new'">이 골프장에서 모집 올리기</button>
-      </div>
+      </div>`}
     </div>
   </div>`;
   stagger();
@@ -1376,12 +1357,6 @@ function renderNew() {
       <h1 style="margin:0;font-size:22px">빈자리 모집 올리기</h1>
     </div>
     <p style="margin-top:10px;font-size:13.5px;color:var(--ink-2);font-weight:500;line-height:1.6">일행이 취소됐나요? 위약금 대신 빈자리를 할인가로 양도하세요. 평균 <b>30분 안에</b> 채워집니다.</p>
-
-    <label class="f-label">종류</label>
-    <div class="seg" id="np-kind">
-      <button class="on" data-v="field"><i class="ph-fill ph-golf"></i> 필드 라운드</button>
-      <button data-v="screen"><i class="ph-fill ph-monitor-play"></i> 스크린골프</button>
-    </div>
 
     <label class="f-label" id="np-venue-label">골프장</label>
     <div class="f-input"><i class="ph ph-golf" style="color:var(--ink-3)"></i>
@@ -1495,19 +1470,6 @@ function renderNew() {
     }));
   };
   drawCal();
-  $("#np-kind").addEventListener("click", e => {
-    const b = e.target.closest("button"); if (!b) return;
-    $$("#np-kind button").forEach(x => x.classList.remove("on")); b.classList.add("on");
-    st.kind = b.dataset.v;
-    const scr = st.kind === "screen";
-    $("#np-course").innerHTML = venueOpts(st.kind);
-    $("#np-venue-label").textContent = scr ? "스크린골프 매장" : "골프장";
-    $("#np-hours-wrap").classList.toggle("hidden", !scr);
-    $("#np-tee").value = scr ? "20:00" : "07:30";
-    $("#np-normal").value = scr ? 30000 : 280000;
-    $("#np-price").value = scr ? 13000 : 170000;
-    $("#np-normal").dispatchEvent(new Event("input"));
-  });
   $("#np-tags").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
     b.classList.toggle("on");
@@ -1569,9 +1531,6 @@ function renderNew() {
     };
     if (st.kind === "screen") post.hours = st.hours;
     S.myPosts.push(post);
-    // 데모: 다른 골퍼의 신청/참여가 잠시 뒤 도착 (실서비스에선 서버 푸시)
-    const pool = HOSTS.slice().sort(() => Math.random() - 0.5).slice(0, Math.min(2, st.slots + 1));
-    pool.forEach((h, i) => S.reqPlan.push({ pid: post.id, hid: h.id, due: Date.now() + 18000 + i * 25000 + Math.random() * 15000 }));
     Store.save();
     askNotifPerm();
     toast("모집이 올라갔어요! 신청이 오면 알림으로 알려드려요");
@@ -1741,11 +1700,11 @@ window.sendMsg = hid => {
   if (!t) return;
   pushMsg(hid, "me", t);
   inp.value = "";
-  scheduleReply(hid);
+  renderThread(hid);
 };
 window.sendChip = (hid, btn) => {
   pushMsg(hid, "me", btn.textContent);
-  scheduleReply(hid);
+  renderThread(hid);
 };
 
 /* ── 프로필 (나) ────────────────────────── */
@@ -2415,8 +2374,8 @@ function subCard(s) {
         <div class="pc-price"><del>${won(s.normal)}</del><b>${won(s.price)}<small>/회</small></b></div>
         <span class="pc-need">${s.remain}회 남음</span>
       </div>
-      <div style="display:flex;align-items:center;gap:7px;margin-top:10px">
-        ${avat(h)}
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+        ${avat(h, "av-sm")}
         <span style="font-size:12px;font-weight:700;color:var(--ink-2)">${h.name} · 그린지수 ${h.temp.toFixed(1)}</span>
         <span class="tag red" style="margin-left:auto">${off}% 할인</span>
       </div>
@@ -2440,29 +2399,20 @@ window.subSheet = id => {
     <div class="fee-row"><span>정상 회당 가격</span><b><del style="color:var(--ink-3);font-weight:600">${won(s.normal)}</del></b></div>
     <div class="fee-row"><span>남은 회차</span><b>${s.remain}회</b></div>
     <div class="fee-row total"><span>나눠쓰기 가격</span><b>${won(s.price)} /회</b></div>
-    <div style="display:flex;align-items:center;gap:9px;margin-top:14px;background:var(--bg);border-radius:14px;padding:12px">
-      ${avat(h)}
+    <div style="display:flex;align-items:center;gap:10px;margin-top:14px;background:var(--bg);border-radius:14px;padding:12px">
+      ${avat(h, "av-md")}
       <div><b style="font-size:13.5px">${h.name}</b><div style="font-size:11.5px;color:var(--ink-3);font-weight:600">그린지수 ${h.temp.toFixed(1)} · ${h.career}</div></div>
-      <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="closeSheet();openChat('${h.id}')"><i class="ph-fill ph-chat-circle-dots"></i>메시지</button>
     </div>
     <p style="margin-top:12px;font-size:13px;line-height:1.6;color:var(--ink-2);font-weight:500">"${s.memo}"</p>
     <div style="margin-top:12px;background:var(--bg);border-radius:14px;padding:12px;font-size:12px;color:var(--ink-2);font-weight:600;line-height:1.6">
-      연습장 회원권 규정상 동반 이용이 가능한 매장만 등록돼요. 정산은 현장결제 또는 계좌이체로 진행됩니다.
+      <i class="ph-fill ph-info" style="color:var(--green-2)"></i> 연습장 구독 나눠쓰기는 <b>정보 조회 전용</b>이에요. 실제 이용과 정산은 해당 연습장·회원과 직접 확인하세요.
     </div>
-    <button class="btn btn-primary" style="margin-top:16px" onclick="joinSub('${s.id}')" ${joined ? "disabled" : ""}>${joined ? "이용 중이에요" : won(s.price) + "에 나눠쓰기 시작"}</button>
-    <button class="btn btn-ghost" style="margin-top:8px" onclick="closeSheet()">닫기</button>
+    <button class="btn btn-ghost" style="margin-top:16px" onclick="closeSheet()">닫기</button>
   `);
 };
 window.joinSub = id => {
-  if (!S.user) { closeSheet(); needProfile("이용하려면 프로필이 필요해요"); return; }
-  const s = SUBS.find(x => x.id === id);
-  if (!S.subJoined.includes(id)) S.subJoined.push(id);
-  Store.save();
   closeSheet();
-  if (!S.chats[s.hostId]) S.chats[s.hostId] = [];
-  scheduleReply(s.hostId, `${s.venue} 나눠쓰기 신청 확인했어요! 첫 이용 날짜 알려주시면 동반 등록해둘게요. 정산은 회당 ${won(s.price)}입니다.`);
-  toast("나눠쓰기 시작! 호스트가 채팅으로 안내해드려요");
-  render();
+  toast("연습장 구독 나눠쓰기는 정식 출시 후 열려요", "barbell");
 };
 
 /* ══════════ 라우터 ══════════ */
