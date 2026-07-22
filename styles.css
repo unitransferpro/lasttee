@@ -265,10 +265,6 @@ body.dark .tag.blue{background:#1B2C45;color:#8AB8FF}
 .nb-banner:active{transform:scale(.98)}
 .nb-banner-ic{flex:none;width:46px;height:46px;border-radius:15px;background:var(--lime-soft);color:#3E5A00;display:flex;align-items:center;justify-content:center;font-size:23px}
 body.dark .nb-banner-ic{color:var(--lime)}
-.nb-opt{flex:none;padding:8px 12px;border-radius:11px;font-size:13px;font-weight:700;color:var(--ink-2);background:var(--bg);transition:background-color .18s,color .18s,transform .18s}
-.nb-opt.on{background:var(--green);color:var(--lime);transform:scale(1.05)}
-.nb-opt.wk{color:var(--red)}
-.nb-opt.wk.on{color:var(--lime)}
 .nb-map-wrap{isolation:isolate;position:relative;border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow)}
 #nb-map{position:relative;width:100%;height:400px;background:#DDE8DC;overflow:hidden}
 body.dark #nb-map{background:#1C2820}
