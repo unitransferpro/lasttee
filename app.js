@@ -8,7 +8,7 @@ const appEl = $("#app");
 const won = n => "₩" + Math.round(n).toLocaleString("ko-KR");
 const BOOT = new Date();
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-const VERSION = "1.10.0";
+const VERSION = "1.11.0";
 
 /* 전국 디렉토리(venues.js) 항목 → 코스 객체 (dv{index} id) */
 const DIRV = typeof DIR_VENUES !== "undefined" ? DIR_VENUES : [];
@@ -51,7 +51,7 @@ const Store = {
   data: {
     user: null, seenOb: false, joined: [], myPosts: [], crews: [], likes: [], crewFeed: {}, closed: [],
     chats: {}, readAt: {}, pay: null, payPref: "onsite", subJoined: [],
-    notifs: [], notifSeen: 0, pending: [], reqPlan: [], reqs: {}, extraJoiners: {},
+    notifs: [], notifSeen: 0, pending: [], reqPlan: [], reqs: {}, extraJoiners: {}, demoDismissed: false,
     set: { dark: false, nJoin: true, nHot: true, nCrew: true, nMkt: false },
   },
   load() {
@@ -110,6 +110,8 @@ function joinerIds(p) {
   if (S.joined.includes(p.id)) ids.push("me");
   return ids;
 }
+// 데모 시드 데이터 판별: 사용자가 직접 만든 것(me / mp*)이 아니면 예시 데이터
+function isSeedPost(p) { return p && p.hostId !== "me" && !String(p.id).startsWith("mp"); }
 function slotsLeft(p) { return Math.max(0, p.total - joinerIds(p).length); }
 function discount(p) { return Math.round((1 - p.price / p.normal) * 100); }
 function openPosts() { return allPosts().filter(p => slotsLeft(p) > 0); }
@@ -417,7 +419,7 @@ function postCard(p) {
         <div class="pc-price"><del>${won(p.normal)}</del><b>${won(p.price)}<small>/1인</small></b></div>
         <div class="pc-slots"><div class="pc-avatars">${js}</div><span class="pc-need">${left}자리</span></div>
       </div>
-      <div class="pc-badges">${scr ? '<span class="tag blue"><i class="ph-fill ph-monitor-play"></i>스크린</span>' : ""}${p.tags.slice(0, 2).map(t => `<span class="tag ${t.includes("초보") ? "lime" : ""}">${t}</span>`).join("")}${p.instant ? '<span class="tag green"><i class="ph-fill ph-lightning"></i>즉시확정</span>' : ""}</div>
+      <div class="pc-badges">${isSeedPost(p) ? '<span class="tag" style="background:#F3ECDC;color:#8A6D2F">예시</span>' : ""}${scr ? '<span class="tag blue"><i class="ph-fill ph-monitor-play"></i>스크린</span>' : ""}${p.tags.slice(0, 2).map(t => `<span class="tag ${t.includes("초보") ? "lime" : ""}">${t}</span>`).join("")}${p.instant ? '<span class="tag green"><i class="ph-fill ph-lightning"></i>즉시확정</span>' : ""}</div>
     </div>
   </div>`;
 }
@@ -530,6 +532,7 @@ function renderOb() {
   }, { passive: true });
 }
 window.obSkip = () => { S.seenOb = true; Store.save(); location.hash = "#/home"; };
+window.dismissDemo = el => { S.demoDismissed = true; Store.save(); const c = el.closest(".px"); if (c) c.remove(); };
 
 /* ── 회원가입 / 프로필 설정 ───────────────── */
 function renderSignup() {
@@ -668,6 +671,12 @@ function renderHome() {
         <i class="ph-bold ph-caret-right" style="color:var(--ink-3)"></i>
       </button>
     </div>
+
+    ${S.demoDismissed ? "" : `<div class="px" style="margin-top:16px"><div class="demo-note in">
+      <i class="ph-fill ph-flask"></i>
+      <div style="flex:1"><b>지금 보이는 모집은 서비스 예시예요</b><p>실제 골퍼들이 모이면 실시간 빈자리로 채워집니다. 골프장 정보(897곳)는 공시·실측 기반의 실제 데이터예요.</p></div>
+      <button onclick="dismissDemo(this)" aria-label="닫기"><i class="ph-bold ph-x"></i></button>
+    </div></div>`}
 
     <div class="h-sec px"><h2>지금 참여할 수 있는 라운드</h2><span class="more" onclick="location.hash='#/map'">지도로 보기</span></div>
     <div class="chips" id="home-kind" style="padding-bottom:2px">
@@ -1587,7 +1596,8 @@ function renderCrews() {
   appEl.innerHTML = `
   <div class="view">
     <div class="page-head"><h1>골프 크루</h1></div>
-    <p class="px" style="font-size:13.5px;color:var(--ink-2);font-weight:500;line-height:1.6;margin-bottom:16px">라운드에서 만난 사이가 크루가 됩니다. 정기 라운드, 번개, 원정까지. 혼자 치는 골프는 이제 그만.</p>
+    <p class="px" style="font-size:13.5px;color:var(--ink-2);font-weight:500;line-height:1.6;margin-bottom:12px">라운드에서 만난 사이가 크루가 됩니다. 정기 라운드, 번개, 원정까지. 혼자 치는 골프는 이제 그만.</p>
+    <div class="px" style="margin-bottom:14px"><div class="demo-note"><i class="ph-fill ph-flask"></i><div style="flex:1"><b>아래 크루는 서비스 예시예요</b><p>실제 사용자가 모이면 우리 지역의 진짜 크루로 채워집니다.</p></div></div></div>
     <div class="px">${CREWS.map(crewCard).join("")}</div>
     <div class="px" style="margin-top:8px">
       <div class="partner-card in"><div class="ic"><i class="ph-fill ph-flag-banner"></i></div><b>나만의 크루 만들기</b><p>정기 멤버가 4명 이상이면 크루를 개설할 수 있어요.<br>크루 전용 모집과 단체 할인이 제공됩니다.</p>
@@ -1840,7 +1850,7 @@ function renderUser(id) {
       <div class="prof-av av g${h.g}"><svg viewBox="0 0 24 24">${AV_GLYPHS[h.avatar % AV_GLYPHS.length]}</svg></div>
       <div class="prof-name">${h.name}</div>
       <div class="prof-sub">${h.gender} · ${h.age} · ${h.career} · 평균 ${h.avg}타</div>
-      ${h.verified ? '<span class="verified"><i class="ph-fill ph-seal-check"></i>본인인증 완료</span>' : ""}
+      <span class="verified" style="background:rgba(255,255,255,.14);color:#fff"><i class="ph-fill ph-flask"></i>서비스 예시 프로필</span>
     </div>
     <div class="stat-row in">
       <div class="stat-cell"><b>${h.rounds}</b><span>총 라운드</span></div>

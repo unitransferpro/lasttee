@@ -310,6 +310,15 @@ body.dark .bm-name{background:rgba(18,28,21,.88);color:#E8F0E8}
 .s-ic.scr{background:#E3EDFB;color:#1B5FBF}
 body.dark .s-ic{color:var(--lime)}
 body.dark .s-ic.scr{background:#1B2C45;color:#8AB8FF}
+/* 데모 안내 노트 */
+.demo-note{display:flex;gap:11px;align-items:flex-start;background:#F3ECDC;border:1px solid #E3D6B8;border-radius:var(--r-md);padding:14px 15px}
+body.dark .demo-note{background:#2A2717;border-color:#403A22}
+.demo-note > i{flex:none;font-size:20px;color:#8A6D2F;margin-top:1px}
+body.dark .demo-note > i{color:#D6B45B}
+.demo-note b{font-size:13.5px;font-weight:800;color:var(--ink)}
+.demo-note p{font-size:12px;font-weight:500;color:var(--ink-2);margin-top:3px;line-height:1.5}
+.demo-note button{flex:none;color:var(--ink-3);font-size:16px;padding:2px}
+
 /* 검색 필터 버튼 */
 .filter-btn{flex:none;width:54px;border-radius:16px;background:var(--card);border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:21px;color:var(--ink-2);position:relative;transition:border-color .2s,transform .15s}
 .filter-btn:active{transform:scale(.94)}
