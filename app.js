@@ -8,7 +8,7 @@ const appEl = $("#app");
 const won = n => "₩" + Math.round(n).toLocaleString("ko-KR");
 const BOOT = new Date();
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-const VERSION = "1.8.0";
+const VERSION = "1.9.0";
 
 /* 전국 디렉토리(venues.js) 항목 → 코스 객체 (dv{index} id) */
 const DIRV = typeof DIR_VENUES !== "undefined" ? DIR_VENUES : [];
@@ -175,6 +175,14 @@ function courseArt(course, variant = 0) {
 }
 
 /* ── 공통 UI ───────────────────────────── */
+/* 게스트 가드: 가입 후 원래 하려던 화면으로 복귀 */
+window._returnTo = null;
+function needProfile(msg) {
+  window._returnTo = location.hash || "#/home";
+  toast(msg, "user-circle-plus");
+  location.hash = "#/signup";
+}
+
 /* 뒤로가기: 히스토리를 새로 쌓지 않고 복귀, 진입 히스토리가 없으면 폴백 */
 window.goBack = fb => {
   const before = location.hash;
@@ -358,7 +366,7 @@ function scheduleReply(hid, custom) {
   if (location.hash === "#/chat/" + hid) renderThread(hid);
 }
 window.openChat = hid => {
-  if (!S.user) { toast("메시지를 보내려면 프로필이 필요해요", "user-circle-plus"); location.hash = "#/signup"; return; }
+  if (!S.user) { needProfile("메시지를 보내려면 프로필이 필요해요"); return; }
   if (!S.chats[hid]) {
     const h = hostById(hid);
     pushMsg(hid, "h", `안녕하세요, ${h.name}입니다. 궁금한 점 편하게 물어보세요!`);
@@ -595,7 +603,8 @@ function renderSignup() {
     S.seenOb = true;
     Store.save();
     toast(`${nick}님, 환영해요! 좋은 라운드 잡아드릴게요`);
-    location.hash = "#/home";
+    location.hash = window._returnTo && window._returnTo !== "#/signup" ? window._returnTo : "#/home";
+    window._returnTo = null;
   });
 }
 
@@ -645,11 +654,11 @@ function renderHome() {
     </div>
 
     <div class="ticker"><div class="ticker-in">
-      <em>●</em>방금 이*현님이 블루원 상주 참여 확정, 47% 할인
-      <em>●</em>5분 전 새 모집: 골프존파크 강남역점 오늘 밤 게임, 64% 할인
-      <em>●</em>3분 전 김*연님이 클럽72 참여 신청
-      <em>●</em>7분 전 새 모집: 설해원 GC 내일 11시, 37% 할인
-      <em>●</em>12분 전 박*진님이 그린지수 5.0 후기를 받았어요
+      <em>●</em>지금 참여 가능한 빈자리 ${open.length}건
+      <em>●</em>오늘 마감 임박 ${today.length}건
+      <em>●</em>평균 할인율 ${avgOff}%
+      <em>●</em>최대 절약 ${won(maxSave)}
+      <em>●</em>전국 골프장 · 스크린 ${(COURSES.length + DIRV.length).toLocaleString()}곳 등록
     </div></div>
 
     <div class="px" style="margin-top:16px">
@@ -984,7 +993,8 @@ function renderPost(id) {
         <div class="fee-row"><span>절약되는 금액</span><b class="save">${won(p.normal - p.price)} 절약</b></div>
         `}
         <div class="fee-row total"><span>라스트티 참여가</span><b>${won(p.price)}</b></div>
-        <div style="margin-top:10px;font-size:12px;color:var(--ink-3);font-weight:600;display:flex;align-items:center;gap:6px"><i class="ph-fill ph-bank"></i>결제: 현장결제 또는 계좌이체 중 선택</div>
+        <div class="fee-row"><span>플랫폼 수수료 (확정 시 부과)</span><b>+ ${won(platformFee(p.price))}</b></div>
+        <div style="margin-top:10px;font-size:12px;color:var(--ink-3);font-weight:600;display:flex;align-items:center;gap:6px"><i class="ph-fill ph-bank"></i>결제: 현장결제 또는 계좌이체 · 취소 시 수수료 전액 환급</div>
       </div>
 
       ${myReqs.length ? `
@@ -1112,7 +1122,7 @@ window.setJoinPay = v => {
   $$("#pay-radios .radio-row").forEach(r => r.classList.toggle("on", r.dataset.v === v));
 };
 window.askJoin = id => {
-  if (!S.user) { toast("참여하려면 프로필이 필요해요", "user-circle-plus"); location.hash = "#/signup"; return; }
+  if (!S.user) { needProfile("참여하려면 프로필이 필요해요"); return; }
   const p = postById(id); const c = courseById(p.courseId);
   joinPay = S.payPref || "onsite";
   openSheet(`
@@ -1337,7 +1347,7 @@ function renderCourse(id) {
 
 /* ── 모집 올리기 ────────────────────────── */
 function renderNew() {
-  if (!S.user) { toast("모집을 올리려면 프로필이 필요해요", "user-circle-plus"); location.hash = "#/signup"; return; }
+  if (!S.user) { needProfile("모집을 올리려면 프로필이 필요해요"); return; }
   const st = { kind: "field", courseId: COURSES[0].id, day: 0, tee: "07:30", holes: 18, hours: 2, slots: 1, normal: 280000, price: 170000, tags: [], level: "누구나", memo: "", pay: "onsite", confirm: "instant" };
   const venueOpts = kind => {
     const list = COURSES.filter(c => kind === "screen" ? isScreen(c) : !isScreen(c));
@@ -1626,7 +1636,7 @@ function renderCrew(id) {
   stagger();
 }
 window.toggleCrew = id => {
-  if (!S.user) { toast("크루 가입엔 프로필이 필요해요", "user-circle-plus"); location.hash = "#/signup"; return; }
+  if (!S.user) { needProfile("크루 가입엔 프로필이 필요해요"); return; }
   const i = S.crews.indexOf(id);
   if (i >= 0) { S.crews.splice(i, 1); toast("크루에서 나왔어요"); }
   else { S.crews.push(id); toast("크루 가입 완료! 피드에 인사를 남겨보세요"); }
@@ -1887,7 +1897,7 @@ function maskAcct(num) {
   return d.length > 4 ? "****" + d.slice(-4) : d;
 }
 function renderPay() {
-  if (!S.user) { toast("프로필이 필요해요", "user-circle-plus"); location.hash = "#/signup"; return; }
+  if (!S.user) { needProfile("프로필이 필요해요"); return; }
   appEl.innerHTML = `
   <div class="view form-page" style="padding-top:18px">
     <div style="display:flex;align-items:center;gap:12px">
@@ -2436,7 +2446,7 @@ window.subSheet = id => {
   `);
 };
 window.joinSub = id => {
-  if (!S.user) { closeSheet(); toast("이용하려면 프로필이 필요해요", "user-circle-plus"); location.hash = "#/signup"; return; }
+  if (!S.user) { closeSheet(); needProfile("이용하려면 프로필이 필요해요"); return; }
   const s = SUBS.find(x => x.id === id);
   if (!S.subJoined.includes(id)) S.subJoined.push(id);
   Store.save();
