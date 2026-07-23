@@ -1,0 +1,25 @@
+{
+  "appId": "kr.lasttee.app",
+  "appName": "라스트티",
+  "webDir": "www",
+  "backgroundColor": "#072418",
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1100,
+      "launchAutoHide": false,
+      "backgroundColor": "#072418",
+      "showSpinner": false,
+      "androidSpinnerStyle": "small",
+      "splashFullScreen": true,
+      "splashImmersive": false
+    },
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#0B3B27",
+      "overlaysWebView": false
+    }
+  }
+}

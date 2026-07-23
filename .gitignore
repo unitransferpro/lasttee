@@ -1,0 +1,24 @@
+# Capacitor / 네이티브 빌드 산출물
+node_modules/
+www/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Android 생성물 (android/ 소스는 커밋, 빌드물은 무시)
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+
+# iOS 생성물
+ios/App/Pods/
+ios/App/build/
+ios/App/App/public/
+
+.DS_Store

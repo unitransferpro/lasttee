@@ -8,7 +8,7 @@ const appEl = $("#app");
 const won = n => "₩" + Math.round(n).toLocaleString("ko-KR");
 const BOOT = new Date();
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-const VERSION = "1.16.0";
+const VERSION = "1.16.1";
 
 /* 전국 디렉토리(venues.js) 항목 → 코스 객체 (dv{index} id) */
 const DIRV = typeof DIR_VENUES !== "undefined" ? DIR_VENUES : [];
@@ -2597,6 +2597,27 @@ setTimeout(() => {
   render();
 }, 1500);
 
-if ("serviceWorker" in navigator) {
+/* ── Capacitor 네이티브 (Android/iOS) ─────── */
+const _CAP = window.Capacitor;
+const _isNative = !!(_CAP && _CAP.isNativePlatform && _CAP.isNativePlatform());
+if (_isNative) {
+  const P = _CAP.Plugins || {};
+  // 상태바: 브랜드 다크그린 + 밝은 아이콘
+  try { P.StatusBar && P.StatusBar.setStyle({ style: "LIGHT" }); } catch (e) {}
+  try { P.StatusBar && P.StatusBar.setBackgroundColor({ color: "#0B3B27" }); } catch (e) {}
+  // 앱 렌더 후 네이티브 스플래시 감추기
+  const hideSplash = () => { try { P.SplashScreen && P.SplashScreen.hide(); } catch (e) {} };
+  setTimeout(hideSplash, 1200);
+  // 안드로이드 하드웨어 뒤로가기: 홈이면 종료, 아니면 뒤로
+  try {
+    P.App && P.App.addListener("backButton", () => {
+      const h = location.hash;
+      if (!h || h === "#/home" || h === "#/") { try { P.App.exitApp(); } catch (e) {} }
+      else history.back();
+    });
+  } catch (e) {}
+}
+// 서비스워커는 웹(PWA)에서만. 네이티브 앱은 로컬 자산을 직접 서빙하므로 불필요.
+if ("serviceWorker" in navigator && !_isNative) {
   window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
 }
