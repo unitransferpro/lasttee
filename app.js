@@ -412,13 +412,14 @@ function postCard(p) {
 function pastCard(p) {
   const c = courseById(p.courseId);
   const scr = isScreen(c);
+  const dist = courseDistTxt(c);
   const js = [p.hostId, ...p.joiners.slice(0, 2)].map(id => avat(personOf(id))).join("");
   return `
   <div class="post-card in past" onclick="location.hash='#/post/${p.id}'">
     <div class="pc-art sat">${satShot(c, scr ? 17 : 14)}<div class="pc-off" style="background:rgba(90,90,90,.85)">성사</div></div>
     <div class="pc-main">
       <div class="pc-title">${c.name}</div>
-      <div class="pc-meta">${c.city} · ${scr ? p.holes + "홀 게임" : p.holes + "홀"} · ${discount(p)}% 할인으로 마감</div>
+      <div class="pc-meta">${c.city} · ${scr ? p.holes + "홀 게임" : p.holes + "홀"} · ${discount(p)}% 할인으로 마감${dist ? ` · <span style="color:var(--green-2);font-weight:800"><i class="ph-fill ph-navigation-arrow"></i> ${dist}</span>` : ""}</div>
       <div class="pc-row">
         <div class="pc-price"><del>${won(p.normal)}</del><b>${won(p.price)}<small>/1인</small></b></div>
         <div class="pc-slots"><div class="pc-avatars">${js}</div><span style="margin-left:6px;font-size:11.5px;font-weight:800;color:var(--ink-3)">4명 완료</span></div>
@@ -1057,7 +1058,7 @@ function renderPost(id) {
           <i class="ph-fill ph-calendar-check" style="color:var(--green-2)"></i> ${dayLabel(p)} ${teeStr(p)} 시작 · ${scr ? p.holes + "홀 게임 · 룸 " + hrs + "시간" : p.holes + "홀"}
         </div>
         <div style="margin-top:4px;font-size:13.5px;color:var(--ink-2);font-weight:600">
-          <i class="ph-fill ph-map-pin" style="color:var(--green-2)"></i> ${c.addr || c.city} · ${c.type}
+          <i class="ph-fill ph-map-pin" style="color:var(--green-2)"></i> ${c.addr || c.city} · ${c.type}${courseDistTxt(c) ? ` · <span style="color:var(--green-2);font-weight:800"><i class="ph-fill ph-navigation-arrow"></i> 내 위치에서 ${courseDistTxt(c)}</span>` : ""}
         </div>
         <div style="margin-top:14px;background:var(--green-deep);color:#fff;border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:13px;font-weight:700;color:rgba(255,255,255,.7)">${scr ? "게임 시작까지" : "티오프까지"}</span>
