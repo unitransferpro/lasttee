@@ -791,18 +791,20 @@ function mountBigMap() {
   bmClamp();
   const w = box.clientWidth, h = box.clientHeight;
   if (w < 60 || h < 60) { requestAnimationFrame(() => mountBigMap()); return; }
+  // 부드러운 연속 줌: 타일은 정수 레벨(zi)만 존재하므로, 소수 줌은 타일을 스케일해 표시
   const z = mapState.z;
-  const [xf, yf] = tileXY(mapState.lat, mapState.lng, z);
-  const cx = xf * 256, cy = yf * 256;
-  const maxT = 2 ** z;
+  const zi = Math.round(z);
+  const ts = 256 * 2 ** (z - zi);
+  const [xf, yf] = tileXY(mapState.lat, mapState.lng, zi);
+  const cx = xf * ts, cy = yf * ts;
+  const maxT = 2 ** zi;
   let html = "";
-  const tx0 = Math.floor((cx - w / 2) / 256), tx1 = Math.floor((cx + w / 2) / 256);
-  const ty0 = Math.floor((cy - h / 2) / 256), ty1 = Math.floor((cy + h / 2) / 256);
+  const tx0 = Math.floor((cx - w / 2) / ts), tx1 = Math.floor((cx + w / 2) / ts);
+  const ty0 = Math.floor((cy - h / 2) / ts), ty1 = Math.floor((cy + h / 2) / ts);
   for (let tx = tx0; tx <= tx1; tx++) for (let ty = ty0; ty <= ty1; ty++) {
     if (ty < 0 || ty >= maxT) continue;
-    const left = tx * 256 - (cx - w / 2), top = ty * 256 - (cy - h / 2);
-    const sub = "abcd"[Math.abs(tx + ty) % 4];
-    html += `<img class="bm-tile" style="left:${left}px;top:${top}px" src="https://${sub}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${((tx % maxT) + maxT) % maxT}/${ty}@2x.png" alt="">`;
+    const left = tx * ts - (cx - w / 2), top = ty * ts - (cy - h / 2);
+    html += `<img class="bm-tile" style="left:${left}px;top:${top}px;width:${ts}px;height:${ts}px" src="https://tile.openstreetmap.org/${zi}/${((tx % maxT) + maxT) % maxT}/${ty}.png" alt="">`;
   }
   // 모집이 있는 곳만 핀으로 표시 (열린 모집 = 라임/블루, 지난 매칭 사례 = 회색)
   const K = mapState.kind;
@@ -814,8 +816,8 @@ function mountBigMap() {
     const open = postsForCourse(m.id).length;
     const seed = open ? 0 : allPosts().filter(p => p.courseId === m.id && isSeedPost(p)).length;
     if (!open && !seed) continue;
-    const [vx, vy] = tileXY(m.lat, m.lng, z);
-    const px = vx * 256 - (cx - w / 2), py = vy * 256 - (cy - h / 2);
+    const [vx, vy] = tileXY(m.lat, m.lng, zi);
+    const px = vx * ts - (cx - w / 2), py = vy * ts - (cy - h / 2);
     if (px < -60 || px > w + 60 || py < -60 || py > h + 60) continue;
     if (open) live++; else past++;
     pinsHtml += `<button class="pin ${open ? "" : "dim"} ${m.scr ? "pin-scr" : ""}" style="left:${px}px;top:${py}px" onclick="bmTap('${m.id}')">
@@ -825,14 +827,30 @@ function mountBigMap() {
   html += pinsHtml;
   box.innerHTML = `<div class="bm-layer" id="bm-layer">${html}</div>
     <div class="bm-hint">${live ? `모집 중 ${live}곳` : "지금 열린 모집이 없어요"}${past ? ` · 지난 사례 ${past}곳` : ""}</div>
-    <div class="nb-attr">지도 © OpenStreetMap · CARTO</div>`;
+    <div class="nb-attr">지도 © OpenStreetMap 기여자</div>`;
 }
 window.bmTap = id => {
   const box = $("#big-map");
   if (box && box._sup && Date.now() - box._sup < 400) return;
   pinSheet(id);
 };
-window.bmZoom = d => { mapState.z += d; mountBigMap(); };
+window.bmZoom = d => { mapState.z = Math.round(mapState.z + d); mountBigMap(); };
+// 월드 픽셀 좌표(줌 z 기준)를 지도 중심 위경도로 반영
+function bmSetCenterPx(nx, ny, z) {
+  const scale = 256 * 2 ** z;
+  mapState.lng = (nx / scale) * 360 - 180;
+  const n = Math.PI - (2 * Math.PI * ny) / scale;
+  mapState.lat = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+}
+// 커서(또는 핀치 중심) 아래 지점을 고정한 채 줌: 중심 오프셋(ox,oy)만큼 앵커 보정
+function bmZoomAt(dz, ox, oy) {
+  const z0 = mapState.z;
+  const z1 = Math.max(6, Math.min(16, z0 + dz));
+  const k = 2 ** (z1 - z0);
+  const [xf, yf] = tileXY(mapState.lat, mapState.lng, z0);
+  bmSetCenterPx((xf * 256 + ox) * k - ox, (yf * 256 + oy) * k - oy, z1);
+  mapState.z = z1;
+}
 // 홈: 내 위치 허용 → 모집 카드에 골프장까지 거리(km) 표시
 window.homeLocate = () => {
   if (!navigator.geolocation) { toast("이 기기에선 위치를 사용할 수 없어요", "warning"); return; }
@@ -842,8 +860,33 @@ window.homeLocate = () => {
     Store.save();
     renderHome();
     toast("골프장까지의 거리를 표시했어요", "crosshair");
-  }, () => toast("위치 권한을 허용해야 거리를 보여드릴 수 있어요", "warning"), { timeout: 8000 });
+  }, err => {
+    if (err && err.code === 1) geoHelpSheet();
+    else toast("위치를 가져오지 못했어요. 잠시 후 다시 시도해주세요", "warning");
+  }, { timeout: 8000 });
 };
+// 위치 권한이 거부됐을 때: 어디서 켜는지 안내
+function geoHelpSheet() {
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  openSheet(`
+  <div style="text-align:center"><div class="sheet-ic"><i class="ph-fill ph-crosshair-simple"></i></div>
+  <div style="font-size:19px;font-weight:900;margin-top:12px">위치 권한이 꺼져 있어요</div>
+  <p style="font-size:13px;color:var(--ink-2);font-weight:500;margin-top:6px">거리를 보여드리려면 브라우저에서 위치 권한을 허용해주세요.</p></div>
+  <div style="margin-top:16px">
+    ${ios ? `
+    <div class="info-step"><span class="n">1</span><p>사파리 주소창 왼쪽의 <b>가나다/설정 아이콘</b>을 눌러 <b>웹사이트 설정 &gt; 위치 &gt; 허용</b>을 선택해요.</p></div>
+    <div class="info-step"><span class="n">2</span><p>버튼이 안 보이면 <b>설정 &gt; 앱 &gt; Safari &gt; 위치</b>에서 '확인' 또는 '허용'으로 바꿔주세요.</p></div>
+    <div class="info-step"><span class="n">3</span><p>아이폰 전체 위치가 꺼져 있다면 <b>설정 &gt; 개인정보 보호 및 보안 &gt; 위치 서비스</b>를 켜주세요.</p></div>
+    ` : `
+    <div class="info-step"><span class="n">1</span><p>주소창 왼쪽의 <b>자물쇠(사이트 정보) 아이콘</b>을 눌러주세요.</p></div>
+    <div class="info-step"><span class="n">2</span><p><b>권한 &gt; 위치</b>를 <b>허용</b>으로 바꿔주세요.</p></div>
+    <div class="info-step"><span class="n">3</span><p>항목이 없다면 브라우저 <b>설정 &gt; 개인정보 보호 &gt; 사이트 설정 &gt; 위치</b>에서 이 사이트를 허용해주세요.</p></div>
+    `}
+  </div>
+  <p style="margin-top:12px;font-size:12px;color:var(--ink-3);font-weight:600;text-align:center">허용한 뒤 <b>내 위치에서 거리 보기</b>를 다시 눌러주세요.</p>
+  <button class="btn btn-primary" style="margin-top:14px" onclick="closeSheet();homeLocate()">허용했어요 · 다시 시도</button>
+  <button class="btn btn-ghost" style="margin-top:8px" onclick="closeSheet()">닫기</button>`);
+}
 window.bmLocate = () => {
   if (!navigator.geolocation) { toast("위치를 사용할 수 없어요", "warning"); return; }
   navigator.geolocation.getCurrentPosition(p => {
@@ -860,6 +903,10 @@ function bindBigMap() {
   const ptrs = new Map();
   let start = null, pinchD = 0;
   const layer = () => $("#bm-layer");
+  // 연속 줌은 프레임당 한 번만 다시 그림
+  let raf = 0;
+  const paint = () => { raf = 0; mountBigMap(); };
+  const schedule = () => { if (!raf) raf = requestAnimationFrame(paint); };
   box.addEventListener("pointerdown", e => {
     ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
     box.setPointerCapture(e.pointerId);
@@ -877,8 +924,11 @@ function bindBigMap() {
     if (ptrs.size === 2 && pinchD) {
       const [a, b] = [...ptrs.values()];
       const d = Math.hypot(a.x - b.x, a.y - b.y);
-      if (d > pinchD * 1.3) { bmZoom(1); pinchD = d; box._sup = Date.now(); }
-      else if (d < pinchD * 0.75) { bmZoom(-1); pinchD = d; box._sup = Date.now(); }
+      if (d > 0) {
+        const r = box.getBoundingClientRect();
+        bmZoomAt(Math.log2(d / pinchD), (a.x + b.x) / 2 - r.left - r.width / 2, (a.y + b.y) / 2 - r.top - r.height / 2);
+        pinchD = d; box._sup = Date.now(); schedule();
+      }
       return;
     }
     if (!start) return;
@@ -892,20 +942,30 @@ function bindBigMap() {
     if (!start) return;
     if (start.moved) {
       box._sup = Date.now();
-      const z = mapState.z, scale = 256 * 2 ** z;
+      const z = mapState.z;
       const [xf, yf] = tileXY(mapState.lat, mapState.lng, z);
-      const nx = xf * 256 - start.dx, ny = yf * 256 - start.dy;
-      mapState.lng = (nx / scale) * 360 - 180;
-      const n = Math.PI - (2 * Math.PI * ny) / scale;
-      mapState.lat = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+      bmSetCenterPx(xf * 256 - start.dx, yf * 256 - start.dy, z);
       mountBigMap();
     }
     start = null;
   };
   box.addEventListener("pointerup", end);
   box.addEventListener("pointercancel", end);
-  box.addEventListener("wheel", e => { e.preventDefault(); bmZoom(e.deltaY < 0 ? 1 : -1); }, { passive: false });
-  box.addEventListener("dblclick", e => { e.preventDefault(); bmZoom(1); });
+  // 휠·트랙패드: 스크롤 양에 비례해 부드럽게, 커서 아래 지점을 향해 줌
+  box.addEventListener("wheel", e => {
+    e.preventDefault();
+    const dy = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY;
+    const r = box.getBoundingClientRect();
+    bmZoomAt(-dy * 0.004, e.clientX - r.left - r.width / 2, e.clientY - r.top - r.height / 2);
+    schedule();
+  }, { passive: false });
+  box.addEventListener("dblclick", e => {
+    e.preventDefault();
+    const r = box.getBoundingClientRect();
+    bmZoomAt(1, e.clientX - r.left - r.width / 2, e.clientY - r.top - r.height / 2);
+    mapState.z = Math.round(mapState.z);
+    schedule();
+  });
 }
 function renderMap() {
   const open = openPosts();
@@ -2223,8 +2283,7 @@ function mountNearbyMap() {
   const ty0 = Math.floor((cy - h / 2) / 256), ty1 = Math.floor((cy + h / 2) / 256);
   for (let tx = tx0; tx <= tx1; tx++) for (let ty = ty0; ty <= ty1; ty++) {
     const left = tx * 256 - (cx - w / 2), top = ty * 256 - (cy - h / 2);
-    const sub = "abcd"[Math.abs(tx + ty) % 4];
-    html += `<img class="nb-tile" style="left:${left}px;top:${top}px" src="https://${sub}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${tx}/${ty}@2x.png" alt="">`;
+    html += `<img class="nb-tile" style="left:${left}px;top:${top}px" src="https://tile.openstreetmap.org/${z}/${tx}/${ty}.png" alt="">`;
   }
   for (const m of bmMarkers()) {
     const [vx, vy] = tileXY(m.lat, m.lng, z);
@@ -2237,7 +2296,7 @@ function mountNearbyMap() {
       html += `<button class="bm-dot ${m.scr ? "scr" : m.rng ? "rng" : ""}" style="left:${px}px;top:${py}px;width:11px;height:11px" onclick="pinSheet('${m.id}')" aria-label="${m.name}"></button>`;
     }
   }
-  html += `<div class="nb-attr">지도 © OpenStreetMap · CARTO</div>`;
+  html += `<div class="nb-attr">지도 © OpenStreetMap 기여자</div>`;
   box.innerHTML = html + pins;
 }
 window.nbZoom = d => {
