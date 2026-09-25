@@ -608,6 +608,12 @@ body.dark .sheet-ic{color:var(--lime)}
 .info-card .info-step p{color:rgba(255,255,255,.78)}
 .info-card .info-step p b{color:#fff}
 
+/* 홈: 열린 빈자리 없을 때 첫 모집 유도 카드 */
+.first-post-card{background:var(--card);border-radius:var(--r-lg);padding:24px 20px 20px;text-align:center;box-shadow:var(--shadow-sm)}
+.first-post-card .fp-ic{width:60px;height:60px;border-radius:20px;background:var(--lime);color:var(--green-deep);font-size:28px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.first-post-card b{display:block;font-size:17px;font-weight:900;letter-spacing:-.02em;color:var(--ink)}
+.first-post-card p{margin-top:8px;font-size:13px;line-height:1.6;color:var(--ink-2);font-weight:500}
+
 .partner-card{background:var(--card);border:1.5px dashed #BFCDB9;border-radius:var(--r-lg);padding:20px;text-align:center}
 body.dark .partner-card{border-color:#3A4A3E}
 .partner-card .ic{width:60px;height:60px;border-radius:20px;background:var(--lime-soft);color:#3E5A00;font-size:28px;display:flex;align-items:center;justify-content:center;margin:0 auto}

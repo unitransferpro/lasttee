@@ -6,9 +6,12 @@ const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const appEl = $("#app");
 const won = n => "₩" + Math.round(n).toLocaleString("ko-KR");
+// 사용자가 입력한 텍스트(메모·채팅·닉네임)는 HTML로 해석되지 않게 이스케이프
+const esc = v => String(v ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
 const BOOT = new Date();
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
-const VERSION = "1.16.1";
+const ymd = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+const VERSION = "1.20";
 
 /* 전국 디렉토리(venues.js) 항목 → 코스 객체 (dv{index} id) */
 const DIRV = typeof DIR_VENUES !== "undefined" ? DIR_VENUES : [];
@@ -71,7 +74,7 @@ const Store = {
   data: {
     user: null, seenOb: false, joined: [], myPosts: [], crews: [], likes: [], crewFeed: {}, closed: [],
     chats: {}, readAt: {}, pay: null, payPref: "onsite", subJoined: [], geo: null,
-    notifs: [], notifSeen: 0, pending: [], reqPlan: [], reqs: {}, extraJoiners: {}, demoDismissed: false,
+    notifs: [], notifSeen: 0, notifSeenT: 0, pending: [], reqPlan: [], reqs: {}, extraJoiners: {}, demoDismissed: false,
     set: { dark: false, nJoin: true, nHot: true, nCrew: true, nMkt: false },
   },
   load() {
@@ -86,8 +89,23 @@ const Store = {
     // v1 → v2 마이그레이션: 이모지 아바타 → 글리프 인덱스
     const u = this.data.user;
     if (u && typeof u.avatar === "string") u.avatar = 2;
+    // 본인인증은 실제 인증 연동 전까지 제공하지 않음 (이전 버전의 탭 한 번 "인증"은 무효)
+    if (u && u.verified) u.verified = false;
+    if (u && u.nick) u.nick = String(u.nick).replace(/[<>"'`&]/g, "");
+    // 알림 읽음 기준: 개수 → 시각 (30개 상한 이후 배지가 영영 안 뜨던 문제)
+    if (!this.data.notifSeenT && this.data.notifSeen && this.data.notifs.length) {
+      const seen = this.data.notifs.slice(-this.data.notifSeen);
+      this.data.notifSeenT = seen.length ? Math.max(...seen.map(n => n.t || 0)) : 0;
+    }
+    // 내 모집: 상대 일수(day) → 절대 날짜(date). 예전 글은 작성 시각(mp{ts}) 기준으로 복원
+    (this.data.myPosts || []).forEach(p => {
+      if (p.date) return;
+      const ts = +String(p.id).slice(2) || Date.now();
+      const d = new Date(ts);
+      p.date = ymd(new Date(d.getFullYear(), d.getMonth(), d.getDate() + (p.day || 0)));
+    });
   },
-  save() { localStorage.setItem(this.key, JSON.stringify(this.data)); },
+  save() { try { localStorage.setItem(this.key, JSON.stringify(this.data)); } catch (e) {} },
 };
 Store.load();
 const S = Store.data;
@@ -103,6 +121,11 @@ applyTheme();
 /* ── 티오프 시간 계산 ───────────────────── */
 const DAY0_OFFSET_H = { p1: 2.4, p2: 4.9, p4: 6.3, p10: 3.2, p13: 1.6, p14: 5.5, p16: 7.2 };
 function teeDate(p) {
+  if (p.date) {
+    const [y, mo, d] = p.date.split("-").map(Number);
+    const [h, m] = p.tee.split(":").map(Number);
+    return new Date(y, mo - 1, d, h, m);
+  }
   if (p.day === 0 && DAY0_OFFSET_H[p.id]) {
     return new Date(BOOT.getTime() + DAY0_OFFSET_H[p.id] * 3600e3);
   }
@@ -118,7 +141,7 @@ function teeStr(p) {
 function dayLabel(p) {
   const d = teeDate(p);
   const diff = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(BOOT.getFullYear(), BOOT.getMonth(), BOOT.getDate())) / 864e5);
-  const name = diff === 0 ? "오늘" : diff === 1 ? "내일" : diff === 2 ? "모레" : diff + "일 후";
+  const name = diff === 0 ? "오늘" : diff === 1 ? "내일" : diff === 2 ? "모레" : diff === -1 ? "어제" : diff < 0 ? -diff + "일 전" : diff + "일 후";
   return `${name} ${d.getMonth() + 1}.${d.getDate()}(${DOW[d.getDay()]})`;
 }
 
@@ -132,10 +155,12 @@ function joinerIds(p) {
 }
 // 데모 시드 데이터 판별: 사용자가 직접 만든 것(me / mp*)이 아니면 예시 데이터
 function isSeedPost(p) { return p && p.hostId !== "me" && !String(p.id).startsWith("mp"); }
+// 티오프가 지난 실제 모집은 더 이상 참여 불가
+function isEnded(p) { return !isSeedPost(p) && teeDate(p).getTime() <= Date.now(); }
 function slotsLeft(p) { return Math.max(0, p.total - joinerIds(p).length); }
 function discount(p) { return Math.round((1 - p.price / p.normal) * 100); }
 // 릴리즈: "지금 참여 가능" 목록은 실사용자 모집만. 시드 16건은 지난 매칭 사례로만 표시.
-function openPosts() { return allPosts().filter(p => !isSeedPost(p) && slotsLeft(p) > 0); }
+function openPosts() { return allPosts().filter(p => !isSeedPost(p) && !isEnded(p) && slotsLeft(p) > 0); }
 function pastExamples() { return POSTINGS.slice(0, 6); }
 function postsForCourse(cid) { return openPosts().filter(p => p.courseId === cid); }
 
@@ -229,7 +254,9 @@ function toast(msg, icon = "check-circle") {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
 }
+let sheetTimer;
 function openSheet(html) {
+  clearTimeout(sheetTimer);
   const w = $("#sheet-wrap");
   $("#sheet").innerHTML = html;
   w.classList.remove("hidden");
@@ -237,8 +264,10 @@ function openSheet(html) {
 }
 function closeSheet() {
   const w = $("#sheet-wrap");
+  if (w.classList.contains("hidden")) return;
   w.classList.remove("show");
-  setTimeout(() => w.classList.add("hidden"), 380);
+  clearTimeout(sheetTimer);
+  sheetTimer = setTimeout(() => w.classList.add("hidden"), 380);
 }
 $("#sheet-dim").addEventListener("click", closeSheet);
 
@@ -308,7 +337,7 @@ function fmtAgo(t) {
   if (s < 86400) return Math.floor(s / 3600) + "시간 전";
   return Math.floor(s / 86400) + "일 전";
 }
-function unseenNotifs() { return Math.max(0, S.notifs.length - S.notifSeen); }
+function unseenNotifs() { return S.notifs.filter(n => (n.t || 0) > (S.notifSeenT || 0)).length; }
 function askNotifPerm() {
   try { if (window.Notification && Notification.permission === "default") Notification.requestPermission(); } catch (e) {}
 }
@@ -557,7 +586,7 @@ function renderSignup() {
     <h1>${S.user ? "프로필 수정" : "라운드 나가기 전,<br>프로필을 만들어주세요"}</h1>
 
     <label class="f-label">닉네임</label>
-    <div class="f-input"><i class="ph ph-golf" style="color:var(--ink-3)"></i><input id="su-nick" maxlength="10" placeholder="라운드에서 불릴 이름" value="${u.nick || ""}"></div>
+    <div class="f-input"><i class="ph ph-golf" style="color:var(--ink-3)"></i><input id="su-nick" maxlength="10" placeholder="라운드에서 불릴 이름" value="${esc(u.nick || "")}"></div>
 
     <label class="f-label">아바타</label>
     <div class="av-pick" id="su-av">${AV_GLYPHS.map((gl, i) => `<button class="av g${i % 6} ${i === sel.avatar ? "on" : ""}" data-a="${i}" data-g="${i % 6}"><svg viewBox="0 0 24 24">${gl}</svg></button>`).join("")}</div>
@@ -607,13 +636,10 @@ function renderSignup() {
     sel.styles = sel.styles.includes(v) ? sel.styles.filter(x => x !== v) : [...sel.styles, v];
   });
   $("#su-avg").addEventListener("input", e => { sel.avg = +e.target.value; $("#su-avg-val").textContent = sel.avg + "타"; });
-  $("#su-verify").addEventListener("click", function () {
-    sel.verified = true;
-    this.innerHTML = `<i class="ph-fill ph-seal-check" style="color:var(--green-2);font-size:20px"></i><span style="font-weight:700;font-size:14.5px">휴대폰 본인인증 완료</span><span style="margin-left:auto;font-size:12px;color:var(--green-2);font-weight:800">인증됨</span>`;
-    toast("본인인증이 완료됐어요", "seal-check");
-  });
+  // 실제 본인인증(PASS 등) 연동 전에는 인증 완료로 표시하지 않음
+  $("#su-verify").addEventListener("click", () => toast("휴대폰 본인인증은 정식 출시 후 열려요", "seal-check"));
   $("#su-go").addEventListener("click", () => {
-    const nick = $("#su-nick").value.trim();
+    const nick = $("#su-nick").value.replace(/[<>"'`&]/g, "").trim();
     if (!nick) { toast("닉네임을 입력해주세요", "warning"); $("#su-nick").focus(); return; }
     S.user = { nick, ...sel };
     S.seenOb = true;
@@ -691,7 +717,7 @@ function renderHome() {
       <button class="chip ${S.geo ? "on" : ""}" onclick="homeLocate()"><i class="ph-bold ph-crosshair-simple"></i> ${S.geo ? "내 위치 기준 거리 표시 중 · 새로고침" : "내 위치에서 거리 보기"}</button>
     </div>
     <div class="chips" id="home-kind" style="padding-bottom:2px">
-      ${["전체", "필드", "스크린", "연습장"].map(k => `<button class="chip kind ${homeState.kind === k ? "on" : ""}" data-k="${k}">${k === "필드" ? '<i class="ph-fill ph-golf"></i> ' : k === "스크린" ? '<i class="ph-fill ph-monitor-play"></i> ' : k === "연습장" ? '<i class="ph-fill ph-barbell"></i> ' : ""}${k}</button>`).join("")}
+      ${[["전체", "ph-golf", "빈자리 모집"], ["연습장", "ph-barbell", "연습장 구독"]].map(([k, ic, lb]) => `<button class="chip kind ${homeState.kind === k ? "on" : ""}" data-k="${k}"><i class="ph-fill ${ic}"></i> ${lb}</button>`).join("")}
     </div>
     ${homeState.kind !== "연습장" ? `
     <div class="chips" id="home-chips">
@@ -755,13 +781,12 @@ function renderHome() {
     } else homeState.region = b.dataset.r;
     renderHome();
   });
-  $("#home-kind").addEventListener("click", e => {
+  const hk = $("#home-kind");
+  if (hk) hk.addEventListener("click", e => {
     const b = e.target.closest(".chip"); if (!b) return;
     homeState.kind = b.dataset.k;
     renderHome();
   });
-  const ms = $("#home-more-subs");
-  if (ms) ms.addEventListener("click", () => { homeState.kind = "연습장"; renderHome(); window.scrollTo(0, 620); });
 }
 
 /* ── 지도 뷰 ───────────────────────────── */
@@ -1028,7 +1053,9 @@ function renderPost(id) {
   const joined = S.joined.includes(p.id);
   const pendingJoin = S.pending.some(x => x.id === p.id);
   const mine = p.hostId === "me";
-  const myReqs = mine ? (S.reqs[p.id] || []).filter(r => r.status === "pending") : [];
+  const seed = isSeedPost(p);
+  const ended = isEnded(p);
+  const myReqs = mine && !ended ? (S.reqs[p.id] || []).filter(r => r.status === "pending") : [];
   const js = joinerIds(p);
   const hrs = p.hours || 2;
   const night = teeDate(p).getHours() >= 18 || teeDate(p).getHours() < 6;
@@ -1055,15 +1082,20 @@ function renderPost(id) {
         </div>
         <div style="font-size:21px;font-weight:900;letter-spacing:-.02em">${c.name}</div>
         <div style="margin-top:6px;font-size:13.5px;color:var(--ink-2);font-weight:600">
-          <i class="ph-fill ph-calendar-check" style="color:var(--green-2)"></i> ${dayLabel(p)} ${teeStr(p)} 시작 · ${scr ? p.holes + "홀 게임 · 룸 " + hrs + "시간" : p.holes + "홀"}
+          <i class="ph-fill ph-calendar-check" style="color:var(--green-2)"></i> ${seed ? teeStr(p) + " 티오프" : dayLabel(p) + " " + teeStr(p) + " 시작"} · ${scr ? p.holes + "홀 게임 · 룸 " + hrs + "시간" : p.holes + "홀"}
         </div>
         <div style="margin-top:4px;font-size:13.5px;color:var(--ink-2);font-weight:600">
           <i class="ph-fill ph-map-pin" style="color:var(--green-2)"></i> ${c.addr || c.city} · ${c.type}${courseDistTxt(c) ? ` · <span style="color:var(--green-2);font-weight:800"><i class="ph-fill ph-navigation-arrow"></i> 내 위치에서 ${courseDistTxt(c)}</span>` : ""}
         </div>
+        ${seed || ended ? `
+        <div style="margin-top:14px;background:var(--bg);border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;font-weight:700;color:var(--ink-3)">${seed ? "지난 매칭 사례" : "종료된 모집"}</span>
+          <b style="font-size:15px;color:var(--ink-2)"><i class="ph-fill ph-check-circle"></i> ${seed ? p.total + "명 성사" : "티오프 지남"}</b>
+        </div>` : `
         <div style="margin-top:14px;background:var(--green-deep);color:#fff;border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:13px;font-weight:700;color:rgba(255,255,255,.7)">${scr ? "게임 시작까지" : "티오프까지"}</span>
           <b class="countdown" style="font-size:19px;color:var(--lime)" data-cd="${teeDate(p).getTime()}">00:00</b>
-        </div>
+        </div>`}
       </div>
 
       <div class="d-card in">
@@ -1102,7 +1134,7 @@ function renderPost(id) {
       <div class="d-card in">
         <h3><i class="ph-fill ph-users-three"></i>이 팀의 멤버 ${isSeedPost(p)
           ? `<span style="color:var(--green-2);font-size:13px">· ${p.total}명 성사 완료</span>`
-          : `<span style="color:var(--red);font-size:13px">· ${left}자리 남음</span>`}</h3>
+          : ended ? `<span style="color:var(--ink-3);font-size:13px">· 모집 종료</span>` : `<span style="color:var(--red);font-size:13px">· ${left}자리 남음</span>`}</h3>
         ${(isSeedPost(p) ? [...js, ...HOSTS.map(h => h.id).filter(id => !js.includes(id)).slice(0, left)] : js).map(jid => { const h = personOf(jid); return `
           <div class="joiner-row" ${h.id !== "me" && !h.companion ? `onclick="location.hash='#/user/${h.id}'"` : ""}>
             ${avat(h)}
@@ -1110,12 +1142,12 @@ function renderPost(id) {
             <div class="jr-sub">${h.companion ? "호스트와 함께 확정된 일행" : `${h.career} · 평균 ${h.avg}타`}</div></div>
             ${h.companion ? "" : `<div class="jr-temp"><b>${(h.temp || 5).toFixed(1)}</b><span>그린지수</span></div>`}
           </div>`; }).join("")}
-        ${isSeedPost(p) ? "" : Array.from({ length: left }, () => `<div class="slot-empty"><div class="dash"><i class="ph ph-plus"></i></div><span style="font-size:13.5px;font-weight:600">이 자리가 비어있어요</span></div>`).join("")}
+        ${seed || ended ? "" : Array.from({ length: left }, () => `<div class="slot-empty"><div class="dash"><i class="ph ph-plus"></i></div><span style="font-size:13.5px;font-weight:600">이 자리가 비어있어요</span></div>`).join("")}
       </div>
 
       <div class="d-card in">
         <h3><i class="ph-fill ph-chat-circle-text"></i>호스트의 한마디</h3>
-        <p style="font-size:14.5px;line-height:1.65;color:var(--ink-2);font-weight:500">"${p.memo}"</p>
+        <p style="font-size:14.5px;line-height:1.65;color:var(--ink-2);font-weight:500">"${esc(p.memo)}"</p>
         <div style="margin-top:12px;font-size:12px;color:var(--ink-3);font-weight:600">사유: ${p.reason} · ${p.ago || "방금 전"} 게시</div>
         ${!mine ? `<button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="openChat('${p.hostId}')"><i class="ph-fill ph-chat-circle-dots"></i>호스트에게 메시지</button>` : ""}
       </div>
@@ -1167,9 +1199,11 @@ function renderPost(id) {
     ${isSeedPost(p)
       ? `<div class="cta-price"><b>${won(p.price)}</b><span>${discount(p)}% 할인으로 성사</span></div>
          <button class="btn btn-ghost" disabled><i class="ph-fill ph-check-circle"></i>지난 매칭 사례</button>`
-      : `<div class="cta-price"><b>${won(p.price)}</b><span>${discount(p)}% 할인 · ${left}자리</span></div>
+      : `<div class="cta-price"><b>${won(p.price)}</b><span>${ended ? "모집 종료" : discount(p) + "% 할인 · " + left + "자리"}</span></div>
     ${!mine ? `<button class="cta-chat" onclick="openChat('${p.hostId}')"><i class="ph-fill ph-chat-circle-dots"></i></button>` : ""}
-    ${mine
+    ${ended
+      ? `<button class="btn btn-ghost" disabled><i class="ph-fill ph-flag-checkered"></i>종료된 모집</button>`
+      : mine
       ? `<button class="btn btn-danger" onclick="closeMyPost('${p.id}')">모집 마감하기</button>`
       : joined
         ? `<button class="btn btn-ghost" onclick="cancelJoin('${p.id}')">참여 취소</button>`
@@ -1203,7 +1237,8 @@ window.approveReq = (pid, hid, ok) => {
 };
 
 window.sharePost = id => {
-  const p = postById(id); const c = courseById(p.courseId);
+  const p = postById(id); if (!p) return;
+  const c = courseById(p.courseId);
   const text = `[라스트티] ${c.name} ${dayLabel(p)} ${teeStr(p)} 티오프, ${discount(p)}% 할인 참여 (${won(p.price)})`;
   if (navigator.share) navigator.share({ title: "라스트티", text, url: location.href }).catch(() => {});
   else { navigator.clipboard?.writeText(text + " " + location.href); toast("링크가 복사됐어요", "link"); }
@@ -1217,7 +1252,9 @@ window.setJoinPay = v => {
 };
 window.askJoin = id => {
   if (!S.user) { needProfile("참여하려면 프로필이 필요해요"); return; }
-  const p = postById(id); const c = courseById(p.courseId);
+  const p = postById(id);
+  if (!p || p.hostId === "me" || isEnded(p) || slotsLeft(p) === 0) { toast("지금은 참여할 수 없는 모집이에요", "warning"); return; }
+  const c = courseById(p.courseId);
   joinPay = S.payPref || "onsite";
   openSheet(`
     <div style="text-align:center;padding:6px 0 2px">
@@ -1278,6 +1315,7 @@ window.feeConfirm = id => {
 };
 window.doJoin = id => {
   const p = postById(id);
+  if (!p || p.hostId === "me" || isEnded(p) || slotsLeft(p) === 0) { closeSheet(); toast("지금은 참여할 수 없는 모집이에요", "warning"); return; }
   S.payPref = joinPay || "onsite";
   closeSheet();
   askNotifPerm();
@@ -1297,7 +1335,7 @@ window.doJoin = id => {
   renderPost(id);
 };
 window.cancelJoin = id => {
-  const p = postById(id);
+  const p = postById(id); if (!p) return;
   const freeH = isScreen(courseById(p.courseId)) ? 3 : 24;
   const hoursLeft = (teeDate(p) - Date.now()) / 3600e3;
   openSheet(`
@@ -1440,7 +1478,7 @@ function renderCourse(id) {
 /* ── 모집 올리기 ────────────────────────── */
 function renderNew() {
   if (!S.user) { needProfile("모집을 올리려면 프로필이 필요해요"); return; }
-  const st = { kind: "field", courseId: COURSES[0].id, day: 0, tee: "07:30", holes: 18, hours: 2, slots: 1, normal: 280000, price: 170000, tags: [], level: "누구나", memo: "", pay: "onsite", confirm: "instant" };
+  const st = { kind: "field", courseId: COURSES[0].id, day: new Date().getHours() * 60 + new Date().getMinutes() < 7 * 60 ? 0 : 1, tee: "07:30", holes: 18, hours: 2, slots: 1, normal: 280000, price: 170000, tags: [], level: "누구나", memo: "", pay: "onsite", confirm: "instant" };
   const venueOpts = kind => {
     const list = COURSES.filter(c => kind === "screen" ? isScreen(c) : !isScreen(c));
     return REGIONS.slice(1).map(r => {
@@ -1462,7 +1500,7 @@ function renderNew() {
       <select id="np-course">${venueOpts("field")}</select></div>
     <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="venuePickSheet()"><i class="ph-bold ph-magnifying-glass"></i>전국 ${(COURSES.length + DIRV.length).toLocaleString()}곳에서 검색</button>
 
-    <label class="f-label">날짜 <span id="np-date-sel" style="font-weight:700;color:var(--green-2);margin-left:6px">오늘</span></label>
+    <label class="f-label">날짜 <span id="np-date-sel" style="font-weight:700;color:var(--green-2);margin-left:6px">${st.day === 0 ? "오늘" : "내일"}</span></label>
     <div class="cal" id="np-cal"></div>
 
     <label class="f-label">시작 시간 · 홀</label>
@@ -1657,9 +1695,11 @@ function renderNew() {
     st.memo = $("#np-memo").value.trim() || "매너 좋은 분이면 누구나 환영합니다!";
     offCalc();
     if (st.price <= 0 || st.price >= st.normal) { toast("참여가를 확인해주세요", "warning"); return; }
+    const teeDt = new Date(today0.getFullYear(), today0.getMonth(), today0.getDate() + st.day, ...st.tee.split(":").map(Number));
+    if (teeDt.getTime() <= Date.now() + 30 * 60e3) { toast("티오프 시간이 이미 지났거나 너무 임박했어요", "warning"); return; }
     // 채워야 할 자리만 비우고, 나머지는 호스트의 동반 일행(g*)으로 채움
     const post = {
-      id: "mp" + Date.now(), courseId: st.courseId, hostId: "me", day: st.day, tee: st.tee,
+      id: "mp" + Date.now(), courseId: st.courseId, hostId: "me", day: st.day, date: ymd(teeDt), tee: st.tee,
       holes: st.holes, total: 4, joiners: ["me", ...Array.from({ length: 3 - st.slots }, (_, i) => "g" + (i + 1))],
       normal: st.normal, price: st.price, green: st.green, caddy: st.caddy, cart: st.cart,
       reason: "일행 취소", instant: st.confirm === "instant", level: st.level, tags: st.tags.length ? st.tags : ["매너중시"],
@@ -1734,8 +1774,8 @@ function renderCrew(id) {
           <div class="feed-item">
             ${avat(f)}
             <div style="flex:1">
-              <span class="fi-name">${f.name}</span><span class="fi-when">${f.when}</span>
-              <div class="fi-text">${f.text}</div>
+              <span class="fi-name">${f.name}</span><span class="fi-when">${f.t ? fmtAgo(f.t) : f.when}</span>
+              <div class="fi-text">${esc(f.text)}</div>
               <button class="fi-like ${S.likes.includes(id + i) ? "on" : ""}" onclick="likeFeed('${id}',${i},this)"><i class="ph-fill ph-heart"></i><span>${f.likes + (S.likes.includes(id + i) ? 1 : 0)}</span></button>
             </div>
           </div>`).join("")}
@@ -1753,11 +1793,12 @@ window.toggleCrew = id => {
   renderCrew(id);
 };
 window.crewPost = id => {
+  if (!S.user) { needProfile("글을 쓰려면 프로필이 필요해요"); return; }
   const inp = $("#crew-msg");
   const text = inp.value.trim();
   if (!text) return;
   if (!S.crewFeed[id]) S.crewFeed[id] = [];
-  S.crewFeed[id].unshift({ name: S.user.nick, avatar: S.user.avatar, g: S.user.g, text, when: "방금 전", likes: 0 });
+  S.crewFeed[id].unshift({ name: S.user.nick, avatar: S.user.avatar, g: S.user.g, text, t: Date.now(), when: "방금 전", likes: 0 });
   Store.save();
   renderCrew(id);
   toast("피드에 올라갔어요");
@@ -1791,7 +1832,7 @@ function renderChatList() {
         const un = unreadOf(hid);
         return `<div class="chat-row in" onclick="location.hash='#/chat/${hid}'">
           ${avat(h)}
-          <div><div class="cr-name">${h.name}</div><div class="cr-last">${last ? last.t : ""}</div></div>
+          <div><div class="cr-name">${h.name}</div><div class="cr-last">${last ? esc(last.t) : ""}</div></div>
           <div class="cr-meta"><div class="cr-when">${last ? last.w : ""}</div>${un ? `<div class="cr-unread">${un}</div>` : ""}</div>
         </div>`;
       }).join("") : `
@@ -1805,7 +1846,7 @@ function renderChatList() {
 }
 function renderThread(hid) {
   const h = hostById(hid);
-  if (!h) { location.hash = "#/chat"; return; }
+  if (!h || !chatLive()) { location.replace("#/chat"); return; }
   const msgs = chatMsgs(hid);
   S.readAt[hid] = msgs.length;
   Store.save();
@@ -1819,7 +1860,7 @@ function renderThread(hid) {
     </div>
     <div class="msgs" id="msgs">
       <div style="text-align:center;font-size:11.5px;color:var(--ink-3);font-weight:600;padding:4px 0 8px">호스트와의 대화입니다. 연락처 공유 전 상대 프로필과 그린지수를 확인하세요.</div>
-      ${msgs.map(m => `<div class="msg ${m.f === "me" ? "me" : "them"}">${m.t}<span class="mw">${m.w}</span></div>`).join("")}
+      ${msgs.map(m => `<div class="msg ${m.f === "me" ? "me" : "them"}">${esc(m.t)}<span class="mw">${m.w}</span></div>`).join("")}
       ${pendingReply[hid] ? '<div class="typing"><span></span><span></span><span></span></div>' : ""}
     </div>
     <div class="chat-chips">${DM_CHIPS.map(t => `<button class="chip" onclick="sendChip('${hid}',this)">${t}</button>`).join("")}</div>
@@ -1870,7 +1911,9 @@ function renderMe() {
   const u = S.user;
   const upcoming = S.joined.map(postById).filter(Boolean).filter(p => teeDate(p) > new Date(Date.now() - 6 * 3600e3)).sort((a, b) => teeDate(a) - teeDate(b));
   const waiting = S.pending.map(x => postById(x.id)).filter(Boolean);
-  const myPosts = S.myPosts.filter(p => !S.closed.includes(p.id));
+  const myAll = S.myPosts.filter(p => !S.closed.includes(p.id));
+  const myPosts = myAll.filter(p => !isEnded(p));
+  const myEnded = myAll.filter(isEnded).sort((a, b) => teeDate(b) - teeDate(a)).slice(0, 5);
   const saved = S.joined.map(postById).filter(Boolean).reduce((s, p) => s + (p.normal - p.price), 0);
   const unread = unreadTotal();
   appEl.innerHTML = `
@@ -1918,6 +1961,16 @@ function renderMe() {
     ${myPosts.length ? `
     <div class="h-sec px"><h2>내가 올린 모집</h2></div>
     <div class="px">${myPosts.map(postCard).join("")}</div>` : ""}
+
+    ${myEnded.length ? `
+    <div class="h-sec px"><h2>종료된 내 모집</h2></div>
+    <div class="px">${myEnded.map(p => { const c = courseById(p.courseId); const d = teeDate(p); return `
+      <div class="hist-card in" onclick="location.hash='#/post/${p.id}'" style="opacity:.7">
+        <div class="hist-date"><b>${d.getDate()}</b><span>${d.getMonth() + 1}월 ${DOW[d.getDay()]}</span></div>
+        <div style="flex:1"><b style="font-size:15px">${c ? c.name : "골프장"}</b>
+          <div style="font-size:12px;color:var(--ink-3);font-weight:600;margin-top:3px">${teeStr(p)} 티오프 · ${won(p.price)}</div></div>
+        <span class="tag">종료</span>
+      </div>`; }).join("")}</div>` : ""}
 
     ${S.subJoined.length ? `
     <div class="h-sec px"><h2>이용 중인 연습장 구독</h2></div>
@@ -1991,11 +2044,12 @@ function renderAlerts() {
       ${window.Notification && Notification.permission !== "granted" ? `<button class="tag lime" style="margin-left:auto;border:0" onclick="askNotifPerm();toast('브라우저 알림 권한을 요청했어요','bell')"><i class="ph-fill ph-bell-ringing"></i>기기 알림 켜기</button>` : ""}
     </div>
     <div class="px" style="margin-top:8px">
-      ${dyn}
-      ${NOTIFS.map(n => `<div class="notif-row in"><div class="ic"><i class="ph-fill ${n.icon}"></i></div><div><b>${n.title}</b><p>${n.body}</p><span>${n.when}</span></div></div>`).join("")}
+      ${dyn || `<div class="empty" style="padding-top:90px"><div class="big"><i class="ph ph-bell"></i></div>
+        <b>아직 알림이 없어요</b><p>참여 신청, 승인, 모집 소식이 생기면<br>여기에 모아서 보여드려요.</p></div>`}
     </div>
   </div>`;
   S.notifSeen = S.notifs.length;
+  S.notifSeenT = Date.now();
   Store.save();
   stagger();
 }
